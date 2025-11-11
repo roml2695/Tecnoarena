@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tecno Arena - Comunidad Gaming</title>
+    <meta name="description" content="Tecno Arena - La comunidad de gaming más vibrante y competitiva. Ligas, eventos y clubes exclusivos.">
+    <meta name="keywords" content="gaming, ligas, tekken, smash bros, torneos, comunidad gaming">
+    <meta name="author" content="Tecno Arena">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1><a href="#" onclick="showTab('welcome')" aria-label="Tecno Arena - Ir a inicio">Tecno Arena</a></h1>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#" onclick="showTab('welcome')" aria-current="page">Inicio</a></li>
+                        <li class="dropdown">
+                            <a href="#" tabindex="0" aria-haspopup="true">Club Tecno Arena</a>
+                            <div class="dropdown-content">
+                                <a href="#" onclick="showTab('club-info')">Información</a>
+                            </div>
+                        </li>
+                        <li class="dropdown">
+                            <a href="#" tabindex="0" aria-haspopup="true">Liga Tecno Arena</a>
+                            <div class="dropdown-content">
+                                <a href="#" onclick="showTab('liga-info')">Información</a>
+                                <a href="#" onclick="showTab('ranking')">Ranking de Divisiones</a>
+                            </div>
+                        </li>
+                        <li class="dropdown">
+                            <a href="#" tabindex="0" aria-haspopup="true">Eventos</a>
+                            <div class="dropdown-content">
+                                <a href="#" onclick="showTab('eventos-info')">Información</a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="login-section" id="login-section"></div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div id="alert-container"></div>
+
+            <section id="welcome" class="welcome-section">
+                <h2>Bienvenido a Tecno Arena</h2>
+                <p>En Tecno Arena nos dedicamos a crear la comunidad de gaming más vibrante y competitiva. Somos un espacio donde los jugadores pueden conectarse, competir y crecer juntos.</p>
+                <p>Ofrecemos ligas competitivas, eventos especiales y un sistema de clubes exclusivos para nuestros miembros más dedicados.</p>
+                <p>¡Únete a nuestra comunidad y lleva tu experiencia de gaming al siguiente nivel!</p>
+            </section>
+
+            <section id="club-info" class="tabs">
+                <h2>Club Tecno Arena</h2>
+                <p>Los Clubes de Tecno Arena ofrecen beneficios exclusivos para nuestros miembros más comprometidos. Disponemos de dos niveles de membresía:</p>
+                
+                <div class="club-benefits">
+                    <div class="benefit-card">
+                        <h3>Club VIP</h3>
+                        <ul>
+                            <li>Acceso prioritario a eventos</li>
+                            <li>Descuentos en productos oficiales</li>
+                            <li>Participación en torneos exclusivos</li>
+                            <li>Soporte personalizado</li>
+                            <li><strong>Costo: $20/mes</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="benefit-card">
+                        <h3>Club Diamante</h3>
+                        <ul>
+                            <li>Todos los beneficios del Club VIP</li>
+                            <li>Acceso anticipado a nuevos juegos</li>
+                            <li>Entradas gratuitas a eventos especiales</li>
+                            <li>Mentoría personalizada con jugadores profesionales</li>
+                            <li>Invitaciones a meet & greets</li>
+                            <li><strong>Costo: $50/mes</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="showTab('club-request')">Solicitar Membresía</button>
+            </section>
+
+            <section id="liga-info" class="tabs">
+                <h2>Liga Tecno Arena</h2>
+                <p>La Liga Tecno Arena es nuestra competencia principal, donde jugadores de todos los niveles pueden demostrar sus habilidades y ascender en las divisiones.</p>
+                
+                <h3>Sistema de Divisiones</h3>
+                <p>Nuestra liga cuenta con 4 divisiones competitivas:</p>
+                <ul>
+                    <li><strong class="division-diamond">Diamante:</strong> Los mejores jugadores de la comunidad</li>
+                    <li><strong class="division-gold">Oro:</strong> Jugadores experimentados con habilidades sólidas</li>
+                    <li><strong class="division-silver">Plata:</strong> Jugadores intermedios en desarrollo</li>
+                    <li><strong class="division-bronze">Bronce:</strong> Jugadores principiantes</li>
+                </ul>
+                
+                <h3>Juegos Incluidos</h3>
+                <p>Actualmente, nuestra liga incluye competencias en:</p>
+                <ul>
+                    <li>Tekken 8</li>
+                    <li>Super Smash Bros. Ultimate</li>
+                </ul>
+                
+                <h3>Cómo Participar</h3>
+                <p>Para unirte a la liga, simplemente regístrate en nuestra plataforma y selecciona "Solicitar Unirse a Liga" en tu panel de control.</p>
+            </section>
+
+            <section id="ranking" class="tabs">
+                <h2>Ranking de Divisiones</h2>
+                
+                <div class="game-selector">
+                    <button class="btn" onclick="showGameRanking('tekken')">Tekken 8</button>
+                    <button class="btn" onclick="showGameRanking('smash')">Super Smash Ultimate</button>
+                </div>
+                
+                <div class="search-container">
+                    <label for="ranking-search" class="sr-only">Buscar jugador</label>
+                    <input 
+                        type="text" 
+                        id="ranking-search" 
+                        class="search-input" 
+                        placeholder="Buscar jugador..." 
+                        aria-label="Buscar jugador en el ranking"
+                    >
+                </div>
+                
+                <div class="spinner" id="ranking-spinner"></div>
+                
+                <div id="tekken-ranking">
+                    <h3>Tekken 8 - Ranking por División</h3>
+                    
+                    <div class="division-tabs">
+                        <div class="division-tab active" onclick="showDivision('tekken', 'diamante')" aria-selected="true">Diamante</div>
+                        <div class="division-tab" onclick="showDivision('tekken', 'oro')" aria-selected="false">Oro</div>
+                        <div class="division-tab" onclick="showDivision('tekken', 'plata')" aria-selected="false">Plata</div>
+                        <div class="division-tab" onclick="showDivision('tekken', 'bronce')" aria-selected="false">Bronce</div>
+                    </div>
+                    
+                    <div id="tekken-diamante" class="division-content active">
+                        <h4 class="division-diamond">División Diamante</h4>
+                        <div id="tekken-diamante-container"></div>
+                    </div>
+                    
+                    <div id="tekken-oro" class="division-content">
+                        <h4 class="division-gold">División Oro</h4>
+                        <div id="tekken-oro-container"></div>
+                    </div>
+                    
+                    <div id="tekken-plata" class="division-content">
+                        <h4 class="division-silver">División Plata</h4>
+                        <div id="tekken-plata-container"></div>
+                    </div>
+                    
+                    <div id="tekken-bronce" class="division-content">
+                        <h4 class="division-bronze">División Bronce</h4>
+                        <div id="tekken-bronce-container"></div>
+                    </div>
+                </div>
+                
+                <div id="smash-ranking" style="display: none;">
+                    <h3>Super Smash Ultimate - Ranking por División</h3>
+                    
+                    <div class="division-tabs">
+                        <div class="division-tab active" onclick="showDivision('smash', 'diamante')" aria-selected="true">Diamante</div>
+                        <div class="division-tab" onclick="showDivision('smash', 'oro')" aria-selected="false">Oro</div>
+                        <div class="division-tab" onclick="showDivision('smash', 'plata')" aria-selected="false">Plata</div>
+                        <div class="division-tab" onclick="showDivision('smash', 'bronce')" aria-selected="false">Bronce</div>
+                    </div>
+                    
+                    <div id="smash-diamante" class="division-content active">
+                        <h4 class="division-diamond">División Diamante</h4>
+                        <div id="smash-diamante-container"></div>
+                    </div>
+                    
+                    <div id="smash-oro" class="division-content">
+                        <h4 class="division-gold">División Oro</h4>
+                        <div id="smash-oro-container"></div>
+                    </div>
+                    
+                    <div id="smash-plata" class="division-content">
+                        <h4 class="division-silver">División Plata</h4>
+                        <div id="smash-plata-container"></div>
+                    </div>
+                    
+                    <div id="smash-bronce" class="division-content">
+                        <h4 class="division-bronze">División Bronce</h4>
+                        <div id="smash-bronce-container"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="eventos-info" class="tabs">
+                <h2>Eventos Tecno Arena</h2>
+                <p>En Tecno Arena organizamos eventos regulares para nuestra comunidad, incluyendo:</p>
+                
+                <h3>Torneos Mensuales</h3>
+                <p>Cada mes organizamos torneos oficiales con premios en efectivo y productos exclusivos.</p>
+                
+                <h3>Encuentros Comunitarios</h3>
+                <p>Eventos sociales donde los miembros pueden conocerse, intercambiar estrategias y jugar de forma casual.</p>
+                
+                <h3>Clínicas de Entrenamiento</h3>
+                <p>Sesiones dirigidas por jugadores profesionales para ayudar a los miembros a mejorar sus habilidades.</p>
+                
+                <h3>Próximos Eventos</h3>
+                <ul>
+                    <li><strong>Torneo de Primavera:</strong> 15 de Abril - Premio: $1000</li>
+                    <li><strong>Clínica de Tekken 8:</strong> 22 de Abril - Impartida por "TheKing"</li>
+                    <li><strong>Encuentro Comunitario:</strong> 29 de Abril - Zona de juegos libre</li>
+                </ul>
+            </section>
+
+            <section id="register" class="tabs form-container">
+                <h2>Registro de Usuario</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="reg-username">Nombre de usuario:</label>
+                        <input type="text" id="reg-username" required minlength="3" maxlength="20" aria-describedby="reg-username-error">
+                        <div class="error-message" id="reg-username-error" role="alert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Correo electrónico:</label>
+                        <input type="email" id="reg-email" required aria-describedby="reg-email-error">
+                        <div class="error-message" id="reg-email-error" role="alert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Contraseña:</label>
+                        <input type="password" id="reg-password" required minlength="6" aria-describedby="reg-password-error">
+                        <div class="error-message" id="reg-password-error" role="alert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-confirm-password">Confirmar contraseña:</label>
+                        <input type="password" id="reg-confirm-password" required aria-describedby="reg-confirm-password-error">
+                        <div class="error-message" id="reg-confirm-password-error" role="alert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-age">Edad:</label>
+                        <input type="number" id="reg-age" min="13" max="120" required aria-describedby="reg-age-error">
+                        <div class="error-message" id="reg-age-error" role="alert"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-gender">Sexo:</label>
+                        <select id="reg-gender" required aria-describedby="reg-gender-error">
+                            <option value="">Selecciona una opción</option>
+                            <option value="masculino">Masculino</option>
+                            <option value="femenino">Femenino</option>
+                            <option value="otro">Otro</option>
+                            <option value="prefiero-no-decir">Prefiero no decir</option>
+                        </select>
+                        <div class="error-message" id="reg-gender-error" role="alert"></div>
+                    </div>
+                    <button type="button" class="btn" onclick="registerUser()">Registrarse</button>
+                </form>
+            </section>
+
+            <section id="user-profile" class="tabs">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <span id="profile-avatar-text">U</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profile-username">Usuario</h2>
+                        <span id="profile-admin-badge" class="profile-badge" style="display: none;">Administrador</span>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="profile-card">
+                        <h3>Información Personal</h3>
+                        <p><strong>Nombre de usuario:</strong> <span id="profile-display-username">-</span></p>
+                        <p><strong>Correo electrónico:</strong> <span id="profile-email">-</span></p>
+                        <p><strong>Edad:</strong> <span id="profile-age">-</span></p>
+                        <p><strong>Sexo:</strong> <span id="profile-gender">-</span></p>
+                    </div>
+                    
+                    <div class="profile-card">
+                        <h3>Estado del Club</h3>
+                        <p id="profile-club-status">No tienes membresía de club activa</p>
+                    </div>
+                    
+                    <div class="profile-card">
+                        <h3>Ligas y Divisiones</h3>
+                        <div id="profile-leagues">
+                            <p>No estás registrado en ninguna liga</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="user-panel" class="tabs form-container">
+                <h2>Panel de Control</h2>
+                <div class="form-group">
+                    <label for="panel-username">Nombre de usuario:</label>
+                    <input type="text" id="panel-username" aria-describedby="panel-username-error">
+                    <div class="error-message" id="panel-username-error" role="alert"></div>
+                </div>
+                <div class="form-group">
+                    <label for="panel-email">Correo electrónico:</label>
+                    <input type="email" id="panel-email" aria-describedby="panel-email-error">
+                    <div class="error-message" id="panel-email-error" role="alert"></div>
+                </div>
+                <div class="form-group">
+                    <label for="panel-password">Nueva contraseña:</label>
+                    <input type="password" id="panel-password" placeholder="Dejar en blanco para no cambiar" aria-describedby="panel-password-error">
+                    <div class="error-message" id="panel-password-error" role="alert"></div>
+                </div>
+                <div class="form-group">
+                    <label for="panel-confirm-password">Confirmar nueva contraseña:</label>
+                    <input type="password" id="panel-confirm-password" placeholder="Dejar en blanco para no cambiar" aria-describedby="panel-confirm-password-error">
+                    <div class="error-message" id="panel-confirm-password-error" role="alert"></div>
+                </div>
+                <button class="btn" onclick="updateUserInfo()">Actualizar Información</button>
+                
+                <div style="margin-top: 30px;">
+                    <h3>Información de Liga</h3>
+                    <p id="league-status">No estás registrado en ninguna liga</p>
+                    <button class="btn" id="join-league-btn" onclick="showTab('league-request')">Solicitar Unirse a Liga</button>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <h3>Estado del Club</h3>
+                    <p id="club-status">No tienes membresía de club activa</p>
+                    <button class="btn" onclick="showTab('club-request')">Solicitar Membresía</button>
+                </div>
+            </section>
+
+            <section id="club-request" class="tabs form-container">
+                <h2>Solicitud de Membresía de Club</h2>
+                <div class="form-group">
+                    <label for="club-type">Tipo de Club:</label>
+                    <select id="club-type">
+                        <option value="vip">Club VIP</option>
+                        <option value="diamante">Club Diamante</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="club-message">Mensaje (opcional):</label>
+                    <textarea id="club-message" rows="4"></textarea>
+                </div>
+                <button class="btn" onclick="submitClubRequest()">Enviar Solicitud</button>
+            </section>
+
+            <section id="league-request" class="tabs form-container">
+                <h2>Solicitud de Unión a Liga</h2>
+                <div class="form-group">
+                    <label for="league-type">Liga a la que deseas unirte:</label>
+                    <select id="league-type">
+                        <option value="tekken">Tekken 8</option>
+                        <option value="smash">Super Smash Ultimate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="league-message">Mensaje (opcional):</label>
+                    <textarea id="league-message" rows="4"></textarea>
+                </div>
+                <button class="btn" onclick="submitLeagueRequest()">Enviar Solicitud</button>
+            </section>
+
+            <section id="admin-panel" class="tabs form-container">
+                <h2>Panel de Administrador</h2>
+                
+                <div class="admin-section">
+                    <h3>Gestión de Usuarios</h3>
+                    <div class="form-group">
+                        <label for="admin-user">Seleccionar Usuario:</label>
+                        <select id="admin-user"></select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin-division">Asignar División:</label>
+                        <select id="admin-division">
+                            <option value="diamante">Diamante</option>
+                            <option value="oro">Oro</option>
+                            <option value="plata">Plata</option>
+                            <option value="bronce">Bronce</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin-score">Puntuación:</label>
+                        <input type="number" id="admin-score" min="0" aria-describedby="admin-score-error">
+                        <div class="error-message" id="admin-score-error" role="alert"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin-game">Juego:</label>
+                        <select id="admin-game">
+                            <option value="tekken">Tekken 8</option>
+                            <option value="smash">Super Smash Ultimate</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn" onclick="updateUserScore()">Actualizar Puntuación</button>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-warning" onclick="toggleAdminStatus()" id="toggle-admin-btn">Conceder Permisos de Admin</button>
+                        <p class="small-text">Convierte a un usuario normal en administrador o viceversa</p>
+                    </div>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>Solicitudes de Club</h3>
+                    <div id="club-requests-list"></div>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>Solicitudes de Liga</h3>
+                    <div id="league-requests-list"></div>
+                </div>
+                
+                <div class="admin-section">
+                    <h3>Acciones Rápidas</h3>
+                    <button class="btn btn-warning" onclick="resetAllData()">Restablecer Todos los Datos</button>
+                    <p class="small-text">Advertencia: Esta acción no se puede deshacer</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Tecno Arena</h3>
+                    <p>La comunidad de gaming más vibrante y competitiva.</p>
+                    <p>Conectamos jugadores, organizamos eventos y creamos experiencias únicas.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Contacto</h3>
+                    <p><strong>Instagram:</strong> @tecnoarena.pzo</p>
+                    <p><strong>Teléfono:</strong> +58 424-9033619</p>
+                    <p><strong>Correo:</strong> Tecnoarenasoporte01@gmail.com</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Enlaces Rápidos</h3>
+                    <p><a href="#" onclick="showTab('welcome')">Inicio</a></p>
+                    <p><a href="#" onclick="showTab('liga-info')">Ligas</a></p>
+                    <p><a href="#" onclick="showTab('eventos-info')">Eventos</a></p>
+                    <p><a href="#" onclick="showTab('club-info')">Clubes</a></p>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2023 Tecno Arena. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
