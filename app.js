@@ -186,9 +186,8 @@ const RankingsModule = (function() {
         return { success: true };
     }
     
-    // Función modificada: Ya no carga datos automáticamente
+    
     function loadRankings() {
-        // Solo renderiza los rankings existentes (pueden estar vacíos)
         renderRankings();
     }
     
@@ -307,7 +306,6 @@ const RankingsModule = (function() {
         });
     }
     
-    // Nueva función para que los admins carguen datos de ejemplo
     function loadSampleData() {
         const sampleRankings = {
             tekken: {
@@ -362,7 +360,6 @@ const RankingsModule = (function() {
         return { success: true, message: 'Datos de ejemplo cargados correctamente' };
     }
     
-    // Nueva función para limpiar todos los rankings
     function clearAllRankings() {
         const emptyRankings = {
             tekken: { diamante: [], oro: [], plata: [], bronce: [] },
@@ -928,7 +925,6 @@ function loadAdminPanel() {
     loadClubRequests();
     loadLeagueRequests();
     
-    // Agregar botones para gestión de rankings
     const adminPanel = document.getElementById('admin-panel');
     const existingRankingSection = adminPanel.querySelector('.ranking-management-section');
     
@@ -944,7 +940,6 @@ function loadAdminPanel() {
             </div>
         `;
         
-        // Insertar después de la sección de gestión de usuarios
         const userManagementSection = adminPanel.querySelector('.admin-section');
         userManagementSection.parentNode.insertBefore(rankingSection, userManagementSection.nextSibling);
     }
@@ -1243,7 +1238,6 @@ async function rejectLeagueRequest(requestId) {
     loadLeagueRequests();
 }
 
-// Nueva función para cargar datos de ejemplo en los rankings (solo para admin)
 async function loadSampleRankings() {
     const confirmed = await UIModule.confirmAction(
         '¿Estás seguro de que quieres cargar datos de ejemplo en los rankings? Esto reemplazará cualquier dato existente.'
@@ -1259,7 +1253,6 @@ async function loadSampleRankings() {
     }
 }
 
-// Nueva función para limpiar todos los rankings (solo para admin)
 async function clearAllRankings() {
     const confirmed = await UIModule.confirmAction(
         '¿Estás seguro de que quieres limpiar todos los rankings? Esta acción no se puede deshacer.'
@@ -1425,4 +1418,5 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
