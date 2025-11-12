@@ -44,32 +44,33 @@ body {
 body::before {
   content: '';
   position: fixed;
-  bottom: 0;
+  top: 0; 
   left: 0;
   width: 200%;
-  height: 170px;
-  background-color: rgba(233, 30, 99, 0.05);
-  border-radius: 100% 100% 0 0;
-  z-index: -2;
+  height: 250px; 
+
+  background-color: rgba(233, 30, 99, 0.08); 
+
+  border-radius: 0 0 100% 100%; 
   
-  animation: flow-wave 25s linear infinite reverse; 
+  z-index: -2; 
+  animation: flow-wave 22s linear infinite reverse; 
 }
 
 body::after {
   content: '';
-  position: fixed; 
-  bottom: 0;
+  position: fixed;
+  bottom: 0; 
   left: 0;
-  width: 200%; 
-  height: 150px; 
+  width: 200%;
+  height: 250px; 
 
-  background-color: rgba(156, 39, 176, 0.1);
+  background-color: rgba(156, 39, 176, 0.1); /
   
-  border-radius: 100% 100% 0 0;
+  border-radius: 100% 100% 0 0; 
   
   z-index: -1; 
-  
-  animation: flow-wave 15s linear infinite;
+  animation: flow-wave 18s linear infinite; 
 }
 
 @keyframes wave {
@@ -925,9 +926,9 @@ footer {
     transform: translateX(0);
   }
   100% {
-    /* Movemos la ola un 50% de su propio ancho.
-       Como la haremos 200% de ancha, esto crea un bucle perfecto. */
+
     transform: translateX(-50%);
   }
 }
+
 
