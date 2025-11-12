@@ -561,41 +561,31 @@ const UIModule = (function() {
 })();
 
 function showTab(tabId) {
-    const tabs = document.querySelectorAll('.tabs');
-    tabs.forEach(tab => {
-        tab.classList.remove('active');
+    document.querySelectorAll('main section').forEach(section => {
+        section.classList.remove('active');
     });
-    
-    const welcomeSection = document.getElementById('welcome');
-    if (welcomeSection) {
-        welcomeSection.style.display = 'none';
+
+    const activeSection = document.getElementById(tabId);
+    if (activeSection) {
+        activeSection.classList.add('active');
     }
     
-    const targetTab = document.getElementById(tabId);
-    if (targetTab) {
-        if (tabId === 'welcome') {
-            welcomeSection.style.display = 'block';
-        } else {
-            targetTab.classList.add('active');
-        }
-        
-        UIModule.updateAriaStates(tabId);
-        
-        if (tabId === 'user-panel' && AppState.getState().currentUser) {
-            updateUserPanel();
-        } else if (tabId === 'user-profile' && AppState.getState().currentUser) {
-            updateUserProfile();
-        } else if (tabId === 'admin-panel' && AppState.getState().currentUser && AppState.getState().currentUser.isAdmin) {
-            loadAdminPanel();
-        } else if (tabId === 'ranking') {
-            RankingsModule.loadRankings();
-        }
-        
+    if ((tabId === 'login' || tabId === 'register') && AppState.getState().currentUser) {
+        // Si ya está logueado, redirige a welcome o perfil
+        showTab('welcome'); 
+    }
+
     if (tabId === 'admin-panel') {
-        renderRequests('club'); 
-        renderRequests('league');
-        fillUserSelect();      
+        if (typeof renderRequests === 'function') {
+            renderRequests('club'); 
+            renderRequests('league');
+        }
+        if (typeof fillUserSelect === 'function') {
+            fillUserSelect();      
+        }
     }
+
+    history.pushState(null, '', `#${tabId}`);
 }
 
 function showGameRanking(game) {
@@ -644,14 +634,15 @@ function getDivisionIndex(division) {
 
 function updateLoginUI() {
     const state = AppState.getState();
-    const loginSection = document.getElementById('login-section');
+    // CRÍTICO: El contenedor debe existir
+    const loginSection = document.getElementById('login-section'); 
 
     if (!loginSection) return; 
 
     let htmlContent = '';
 
     if (state.currentUser) {
-        // Usuario logueado
+        // Usuario logueado (incluye botón ADMIN)
         const isAdmin = state.currentUser.username === 'admin';
         htmlContent = `
             <div class="user-info">
@@ -661,7 +652,7 @@ function updateLoginUI() {
             </div>
         `;
     } else {
-        // Usuario deslogueado (LOGIN/REGISTRARSE)
+        // Usuario deslogueado (Muestra los botones de LOGIN/REGISTRARSE)
         htmlContent = `
             <button class="btn btn-secondary" onclick="showTab('login')">LOGIN</button>
             <button class="btn btn-primary" onclick="showTab('register')">REGISTRARSE</button>
@@ -670,7 +661,7 @@ function updateLoginUI() {
 
     loginSection.innerHTML = htmlContent;
 }
-
+    
 function login() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
@@ -1545,7 +1536,7 @@ function fillUserSelect() {
 
 window.RankingsModule = RankingsModule;
 window.showTab = showTab;
-window.updateLoginUI = updateLoginUI;
+window.updateLoginUI = updateLoginUI; // <--- ESTA LÍNEA ES LA CLAVE FALTANTE
 window.showGameRanking = showGameRanking;
 window.showDivision = showDivision;
 window.login = login;
@@ -1568,6 +1559,7 @@ window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
 window.renderRequests = renderRequests;
 window.handleRequest = handleRequest;
 window.fillUserSelect = fillUserSelect;
+
 
 
 
