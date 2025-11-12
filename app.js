@@ -1531,6 +1531,29 @@ function fillUserSelect() {
     });
 }
 
+function togglePasswordVisibility(inputId, buttonElement) {
+    const input = document.getElementById(inputId);
+    if (!input) {
+        console.error('Input no encontrado para el ID:', inputId);
+        return;
+    }
+    
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    
+    const svgIcon = buttonElement.querySelector('svg');
+
+    if (isPassword) {
+        // Mostrando (cambiar color a uno más visible)
+        buttonElement.setAttribute('aria-label', 'Ocultar contraseña');
+        if (svgIcon) svgIcon.style.color = 'var(--accent-color)'; 
+    } else {
+        // Ocultando (restaurar color)
+        buttonElement.setAttribute('aria-label', 'Mostrar contraseña');
+        if (svgIcon) svgIcon.style.color = ''; 
+    }
+}
+
 // PRIORITY 1: Funciones de Interfaz de Usuario para el Header y Enlaces
 window.showTab = showTab; 
 window.updateLoginUI = updateLoginUI; 
@@ -1563,6 +1586,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
