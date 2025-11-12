@@ -1333,14 +1333,30 @@ function saveDataToStorage() {
 }
 
 function loadDataFromStorage() {
-    const storedState = localStorage.getItem('appState');
-    if (storedState) {
-        const loadedState = JSON.parse(storedState);
-
-        loadedState.currentUser = null; 
+    try {
+        const users = JSON.parse(localStorage.getItem('tecnoArenaUsers')) || []; 
+        const rankings = JSON.parse(localStorage.getItem('tecnoArenaRankings')) || { 
+            tekken: { diamante: [], oro: [], plata: [], bronce: [] }, //
+            smash: { diamante: [], oro: [], plata: [], bronce: [] } //
+        };
+        const clubRequests = JSON.parse(localStorage.getItem('tecnoArenaClubRequests')) || []; 
+        const leagueRequests = JSON.parse(localStorage.getItem('tecnoArenaLeagueRequests')) || []; 
         
+        const savedUser = localStorage.getItem('tecnoArenaCurrentUser'); 
+       
+        let currentUser = savedUser ? JSON.parse(savedUser) : null; 
+          
+        currentUser = null; 
 
-        AppState.setState(loadedState);
+        AppState.setState({ users, rankings, clubRequests, leagueRequests, currentUser }); 
+        
+        if (users.length === 0) { 
+            createDefaultAdmin(); 
+        }
+    } catch (error) {
+        console.error('Error al cargar datos:', error); 
+        showAlert('Error al cargar los datos. Se utilizarán datos por defecto.', 'error'); 
+        createDefaultAdmin(); 
     }
 }
 
@@ -1408,6 +1424,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
