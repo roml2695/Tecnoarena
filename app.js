@@ -1436,7 +1436,7 @@ function createDefaultAdmin() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    AppState.subscribe((state) => {
+    AppState.subscribe(state => {
         if (state.ui.loading) {
             UIModule.setLoadingState(true);
         } else {
@@ -1444,7 +1444,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    loadDataFromStorage();
+    loadDataFromStorage(); 
     
     UIModule.initAccessibility();
     
@@ -1453,13 +1453,10 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', function() {
             RankingsModule.searchRankings(this.value);
         });
-
-    showTab('welcome');
-    updateLoginUI();
     }
     
     showTab('welcome');
-    updateLoginUI();
+    updateLoginUI(); 
 });
 
 function renderRequests(requestType) {
@@ -1534,17 +1531,29 @@ function fillUserSelect() {
     });
 }
 
-window.RankingsModule = RankingsModule;
-window.showTab = showTab;
-window.updateLoginUI = updateLoginUI; // <--- ESTA LÍNEA ES LA CLAVE FALTANTE
-window.showGameRanking = showGameRanking;
-window.showDivision = showDivision;
+// PRIORITY 1: Funciones de Interfaz de Usuario para el Header y Enlaces
+window.showTab = showTab; 
+window.updateLoginUI = updateLoginUI; 
 window.login = login;
 window.registerUser = registerUser;
 window.logout = logout;
+
+// PRIORITY 2: Funciones y Módulos de Estado
+window.RankingsModule = RankingsModule;
+window.showGameRanking = showGameRanking;
+window.showDivision = showDivision;
 window.updateUserInfo = updateUserInfo;
 window.submitClubRequest = submitClubRequest;
 window.submitLeagueRequest = submitLeagueRequest;
+
+// PRIORITY 3: Funciones del Panel de Administración y Utilidades
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
+window.renderRequests = renderRequests;
+window.handleRequest = handleRequest;
+window.fillUserSelect = fillUserSelect; 
+
+// PRIORITY 4: Herramientas de Administración
 window.toggleAdminStatus = toggleAdminStatus;
 window.updateUserScore = updateUserScore;
 window.approveClubRequest = approveClubRequest;
@@ -1554,11 +1563,6 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
-window.togglePasswordVisibility = togglePasswordVisibility;
-window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
-window.renderRequests = renderRequests;
-window.handleRequest = handleRequest;
-window.fillUserSelect = fillUserSelect;
 
 
 
