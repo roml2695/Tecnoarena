@@ -979,6 +979,7 @@ footer {
 .password-toggle {
     position: absolute;
     right: 10px; 
+    top: calc(50% + 15px); /* Ajuste para centrar verticalmente después del label */
     background: transparent;
     border: none;
     cursor: pointer;
@@ -986,12 +987,11 @@ footer {
     padding: 5px;
     z-index: 5;
     transition: color 0.2s ease;
-    top: calc(50% + 15px); 
 }
-
 .password-toggle:hover {
     color: var(--primary-color);
 }
+
 
 
 
