@@ -1389,6 +1389,7 @@ document.addEventListener('DOMContentLoaded', function() {
     AppState.setState({ 
         ...currentState, 
         currentUser: null
+    });
     
     UIModule.initAccessibility();
     
@@ -1426,6 +1427,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
