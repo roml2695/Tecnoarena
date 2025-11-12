@@ -375,23 +375,32 @@
             <section id="admin-panel" class="tabs form-container">
                 <h2>Panel de Administrador</h2>
                 
-                <div class="admin-section">
-                    <h3>Gestión de Usuarios</h3>
-                    <div class="form-group">
-                        <label for="admin-username-manual">Jugador (Nombre a rankear):</label>
-                        <input type="text" id="admin-username-manual" placeholder="Ingresar nombre para el ranking" required>
-                    </div>
+                <h3>Actualizar Ranking</h3>
+                <p class="description">Selecciona un usuario registrado o ingresa un nombre manualmente para añadir/actualizar su ranking en una liga.</p>
 
+                <div class="ranking-admin-form">
                     <div class="form-group">
-                        <label for="admin-game">Juego:</label>
+                        <label for="admin-user-select">1. Usuario Registrado:</label>
+                        <select id="admin-user-select">
+                            <option value="">-- Seleccionar un usuario registrado --</option>
+                            </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admin-username-manual">2. O Ingresar Nombre Manualmente:</label>
+                        <input type="text" id="admin-username-manual" placeholder="Nombre (e.g., Jugador Invitado)">
+                    </div>
+                
+                    <div class="form-group">
+                        <label for="admin-game">3. Escoger Juego:</label>
                         <select id="admin-game">
                             <option value="tekken">Tekken 8</option>
                             <option value="smash">Super Smash Bros. Ultimate</option>
                         </select>
                     </div>
-
+                
                     <div class="form-group">
-                        <label for="admin-division">Asignar División:</label>
+                        <label for="admin-division">4. Escoger División:</label>
                         <select id="admin-division">
                             <option value="diamante">Diamante</option>
                             <option value="oro">Oro</option>
@@ -399,44 +408,13 @@
                             <option value="bronce">Bronce</option>
                         </select>
                     </div>
-
+                
                     <div class="form-group">
-                        <label for="admin-score">Puntuación:</label>
+                        <label for="admin-score">5. Establecer Puntaje:</label>
                         <input type="number" id="admin-score" placeholder="Puntuación (e.g., 1500)" required>
                     </div>
-
+                
                     <button type="button" class="btn btn-primary" onclick="updateRankingFromAdminPanel()">Actualizar Ranking</button>
-                    
-                    <div class="form-group">
-                        <label for="admin-division">Asignar División:</label>
-                        <select id="admin-division">
-                            <option value="diamante">Diamante</option>
-                            <option value="oro">Oro</option>
-                            <option value="plata">Plata</option>
-                            <option value="bronce">Bronce</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="admin-score">Puntuación:</label>
-                        <input type="number" id="admin-score" min="0" aria-describedby="admin-score-error">
-                        <div class="error-message" id="admin-score-error" role="alert"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="admin-game">Juego:</label>
-                        <select id="admin-game">
-                            <option value="tekken">Tekken 8</option>
-                            <option value="smash">Super Smash Ultimate</option>
-                        </select>
-                    </div>
-                    
-                    <button class="btn" onclick="updateUserScore()">Actualizar Puntuación</button>
-                    
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-warning" onclick="toggleAdminStatus()" id="toggle-admin-btn">Conceder Permisos de Admin</button>
-                        <p class="small-text">Convierte a un usuario normal en administrador o viceversa</p>
-                    </div>
                 </div>
                 
                 <div class="admin-section">
@@ -491,6 +469,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
