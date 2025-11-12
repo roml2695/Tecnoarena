@@ -507,6 +507,8 @@ footer {
 .footer-content {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 }
 
@@ -518,18 +520,20 @@ footer {
 
 .footer-section h3 {
     color: var(--primary-color);
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     font-size: 1.2rem;
 }
 
 .footer-section p {
-    margin-bottom: 8px;
+    argin-bottom: 5px; 
+    line-height: 1.4; /
+    font-size: 0.9em; 
 }
 
 .footer-bottom {
     text-align: center;
     margin-top: 20px;
-    padding-top: 20px;
+    padding-top: 10px;
     border-top: 1px solid rgba(156, 39, 176, 0.2);
 }
 
@@ -930,6 +934,7 @@ footer {
     transform: translateX(-50%);
   }
 }
+
 
 
 
