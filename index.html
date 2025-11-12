@@ -229,14 +229,24 @@
                         <input type="email" id="reg-email" required aria-describedby="reg-email-error">
                         <div class="error-message" id="reg-email-error" role="alert"></div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group password-group">
                         <label for="reg-password">Contraseña:</label>
                         <input type="password" id="reg-password" required minlength="6" aria-describedby="reg-password-error">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password', this)" aria-label="Mostrar contraseña">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px">
+                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/>
+                            </svg>
+                        </button>
                         <div class="error-message" id="reg-password-error" role="alert"></div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group password-group">
                         <label for="reg-confirm-password">Confirmar contraseña:</label>
                         <input type="password" id="reg-confirm-password" required aria-describedby="reg-confirm-password-error">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)" aria-label="Mostrar contraseña">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px">
+                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/>
+                            </svg>
+                        </button>
                         <div class="error-message" id="reg-confirm-password-error" role="alert"></div>
                     </div>
                     <div class="form-group">
@@ -368,9 +378,34 @@
                 <div class="admin-section">
                     <h3>Gestión de Usuarios</h3>
                     <div class="form-group">
-                        <label for="admin-user">Seleccionar Usuario:</label>
-                        <select id="admin-user"></select>
+                        <label for="admin-username-manual">Jugador (Nombre a rankear):</label>
+                        <input type="text" id="admin-username-manual" placeholder="Ingresar nombre para el ranking" required>
                     </div>
+
+                    <div class="form-group">
+                        <label for="admin-game">Juego:</label>
+                        <select id="admin-game">
+                            <option value="tekken">Tekken 8</option>
+                            <option value="smash">Super Smash Bros. Ultimate</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin-division">Asignar División:</label>
+                        <select id="admin-division">
+                            <option value="diamante">Diamante</option>
+                            <option value="oro">Oro</option>
+                            <option value="plata">Plata</option>
+                            <option value="bronce">Bronce</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="admin-score">Puntuación:</label>
+                        <input type="number" id="admin-score" placeholder="Puntuación (e.g., 1500)" required>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="updateRankingFromAdminPanel()">Actualizar Ranking</button>
                     
                     <div class="form-group">
                         <label for="admin-division">Asignar División:</label>
@@ -456,6 +491,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
