@@ -590,6 +590,11 @@ function showTab(tabId) {
         } else if (tabId === 'ranking') {
             RankingsModule.loadRankings();
         }
+        
+    if (tabId === 'admin-panel') {
+        renderRequests('club');
+        renderRequests('league');
+        fillUserSelect();
     }
 }
 
@@ -759,82 +764,55 @@ function registerUser() {
 }
 
 function updateRankingFromAdminPanel() {
-    const usernameInput = document.getElementById('admin-username-manual');
+    const userSelect = document.getElementById('admin-user-select'); 
+    const usernameInput = document.getElementById('admin-username-manual'); 
     const gameSelect = document.getElementById('admin-game');
     const divisionSelect = document.getElementById('admin-division');
     const scoreInput = document.getElementById('admin-score');
     
-    const username = usernameInput.value.trim();
-    const game = gameSelect ? gameSelect.value : 'tekken'; 
+    let username = '';
+    
+    if (userSelect && userSelect.value) {
+        username = userSelect.options[userSelect.selectedIndex].textContent.split('(')[0].trim();
+    } else {
+        username = usernameInput.value.trim();
+    }
+    
+    const game = gameSelect.value; 
     const division = divisionSelect.value;
     const score = parseInt(scoreInput.value, 10);
     
     if (!username || isNaN(score) || score < 0) {
-        showAlert('Debes ingresar un nombre de jugador y una puntuación válida (mayor o igual a 0).', 'error');
+        showAlert('Debes seleccionar un usuario registrado O ingresar un nombre manualmente, y una puntuación válida.', 'error');
         return;
     }
     
-    RankingsModule.updateRanking(game, division, username, score);
+    const state = AppState.getState();
+    let isAlreadyRanked = false;
+    let existingDivision = null;
+    let existingGame = null;
 
-    showAlert(`Jugador ${username} actualizado a la división ${division} de ${game} con ${score} puntos.`, 'success');
-    
+    for (const div in state.rankings[game]) {
+        if (state.rankings[game][div].some(player => player.username === username)) {
+            isAlreadyRanked = true;
+            existingDivision = div;
+            existingGame = game;
+            break; 
+        }
+    }
+
+    if (isAlreadyRanked) {
+        RankingsModule.updateRanking(existingGame, division, username, score, existingDivision);
+        showAlert(`Jugador ${username} actualizado: Movido a ${division} de ${game} con ${score} puntos.`, 'success');
+    } else {
+        RankingsModule.updateRanking(game, division, username, score);
+        showAlert(`Jugador ${username} añadido a ${division} de ${game} con ${score} puntos.`, 'success');
+    }
+
+    if (userSelect) userSelect.value = '';
     usernameInput.value = '';
     scoreInput.value = '';
-    
     RankingsModule.renderRankings();
-}
-
-function togglePasswordVisibility(inputId, buttonElement) {
-    const input = document.getElementById(inputId);
-    const isPassword = input.type === 'password';
-    
-    input.type = isPassword ? 'text' : 'password';
-    
-    if (isPassword) {
-        buttonElement.setAttribute('aria-label', 'Ocultar contraseña');
-        // Usamos un color de énfasis para indicar que está visible
-        buttonElement.querySelector('svg').style.color = 'var(--accent-color)'; 
-    } else {
-        buttonElement.setAttribute('aria-label', 'Mostrar contraseña');
-        buttonElement.querySelector('svg').style.color = ''; 
-    }
-}
-
-function logout() {
-    AuthModule.logout();
-    updateLoginUI();
-    showTab('welcome');
-    showAlert('Sesión cerrada correctamente', 'success');
-}
-
-function updateUserPanel() {
-    const currentUser = AppState.getState().currentUser;
-    if (!currentUser) return;
-    
-    document.getElementById('panel-username').value = currentUser.username;
-    document.getElementById('panel-email').value = currentUser.email;
-    
-    const leagueStatus = document.getElementById('league-status');
-    const joinLeagueBtn = document.getElementById('join-league-btn');
-    
-    if (currentUser.leagues && currentUser.leagues.length > 0) {
-        let leagueText = 'Estás registrado en: ';
-        currentUser.leagues.forEach(league => {
-            leagueText += `${league.game} (${league.division}), `;
-        });
-        leagueStatus.textContent = leagueText.slice(0, -2);
-        joinLeagueBtn.textContent = 'Solicitar Unirse a Otra Liga';
-    } else {
-        leagueStatus.textContent = 'No estás registrado en ninguna liga';
-        joinLeagueBtn.textContent = 'Solicitar Unirse a Liga';
-    }
-    
-    const clubStatus = document.getElementById('club-status');
-    if (currentUser.clubMembership) {
-        clubStatus.textContent = `Tienes membresía: ${currentUser.clubMembership === 'vip' ? 'Club VIP' : 'Club Diamante'}`;
-    } else {
-        clubStatus.textContent = 'No tienes membresía de club activa';
-    }
 }
 
 function updateUserProfile() {
@@ -1491,6 +1469,83 @@ document.addEventListener('DOMContentLoaded', function() {
     updateLoginUI();
 });
 
+function renderRequests(requestType) {
+    const state = AppState.getState();
+    const requests = requestType === 'club' ? state.clubRequests : state.leagueRequests;
+    const containerId = requestType === 'club' ? 'club-requests-list' : 'league-requests-list';
+    const container = document.getElementById(containerId);
+
+    if (!container) return;
+
+    if (requests.length === 0) {
+        container.innerHTML = `<p class="empty-state">No hay solicitudes de ${requestType} pendientes.</p>`;
+        return;
+    }
+
+    let html = '<table><thead><tr><th>Usuario</th><th>Email</th><th>Fecha</th><th>Acción</th></tr></thead><tbody>';
+
+    requests.forEach((req, index) => {
+        html += `
+            <tr>
+                <td>${req.username}</td>
+                <td>${req.email}</td>
+                <td>${new Date(req.timestamp).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn-success btn-small" onclick="handleRequest('${requestType}', ${index}, 'accept')">Aceptar</button>
+                    <button class="btn btn-error btn-small" onclick="handleRequest('${requestType}', ${index}, 'reject')">Rechazar</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function handleRequest(requestType, index, action) {
+    const state = AppState.getState();
+    const requestsKey = requestType === 'club' ? 'clubRequests' : 'leagueRequests';
+    
+    
+    const updatedRequests = [...state[requestsKey]];
+    const request = updatedRequests.splice(index, 1)[0]; 
+
+    
+    if (action === 'accept') {
+        showAlert(`Solicitud de ${request.username} para ${requestType} aceptada.`, 'success');
+    } else {
+        showAlert(`Solicitud de ${request.username} para ${requestType} rechazada.`, 'error');
+    }
+
+    
+    AppState.setState({ 
+        [requestsKey]: updatedRequests 
+    });
+    
+    
+    renderRequests('club');
+    renderRequests('league');
+}
+    
+function fillUserSelect() {
+    const userSelect = document.getElementById('admin-user-select');
+    if (!userSelect) return;
+
+    const state = AppState.getState();
+    const users = state.users.filter(u => u.username !== 'admin'); 
+
+    userSelect.innerHTML = '<option value="">-- Seleccionar un usuario registrado --</option>';
+
+    users.forEach(user => {
+        const option = document.createElement('option');
+        // El 'value' debe ser algo único (como el ID o el username)
+        option.value = user.id || user.username; 
+        // El 'textContent' es lo que el administrador ve
+        option.textContent = `${user.username} (${user.email})`;
+        userSelect.appendChild(option);
+    });
+}
+
 window.RankingsModule = RankingsModule;
 window.showTab = showTab;
 window.showGameRanking = showGameRanking;
@@ -1513,6 +1568,11 @@ window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
+window.renderRequests = renderRequests;
+window.handleRequest = handleRequest;
+window.fillUserSelect = fillUserSelect;
+
+
 
 
 
