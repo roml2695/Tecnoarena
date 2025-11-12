@@ -685,31 +685,118 @@ function login() {
 }
 
 function registerUser() {
-    if (!validateRegistrationForm()) {
+    const usernameInput = document.getElementById('reg-username');
+    const emailInput = document.getElementById('reg-email');
+    const passwordInput = document.getElementById('reg-password');
+    const confirmPasswordInput = document.getElementById('reg-confirm-password');
+    const ageInput = document.getElementById('reg-age');
+    const genderInput = document.getElementById('reg-gender');
+
+    const username = usernameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+    const age = parseInt(ageInput.value, 10);
+    const gender = genderInput.value;
+
+    function setErrorMessage(elementId, message) {
+        const errorElement = document.getElementById(elementId + '-error');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = message ? 'block' : 'none';
+        }
+    }
+
+    ['reg-username', 'reg-email', 'reg-password', 'reg-confirm-password', 'reg-age', 'reg-gender'].forEach(id => setErrorMessage(id, ''));
+    
+    let isValid = true;
+    
+    if (!username || username.length < 3) {
+        setErrorMessage('reg-username', 'El nombre de usuario debe tener al menos 3 caracteres.');
+        isValid = false;
+    }
+    if (!AuthModule.validateEmail(email)) {
+        setErrorMessage('reg-email', 'El correo electrónico no es válido.');
+        isValid = false;
+    }
+    if (password.length < 6) {
+        setErrorMessage('reg-password', 'La contraseña debe tener al menos 6 caracteres.');
+        isValid = false;
+    }
+    // VALIDACIÓN CLAVE: Las contraseñas no coinciden.
+    if (password !== confirmPassword) {
+        setErrorMessage('reg-confirm-password', 'Las contraseñas no coinciden.');
+        isValid = false;
+    }
+    if (isNaN(age) || age < 13 || age > 120) {
+        setErrorMessage('reg-age', 'Debes ser mayor de 13 años.');
+        isValid = false;
+    }
+    if (!gender) {
+        setErrorMessage('reg-gender', 'Debes seleccionar un sexo.');
+        isValid = false;
+    }
+
+    if (!isValid) {
+        showAlert('Por favor, corrige los errores en el formulario.', 'error');
+        return;
+    }
+
+    try {
+        AuthModule.register({ username, email, password, age, gender });
+        showAlert('Registro exitoso. Ahora puedes iniciar sesión.', 'success');
+        showTab('welcome');
+        document.getElementById('register-form').reset();
+    } catch (error) {
+        if (error.message.includes('usuario ya está en uso')) {
+            setErrorMessage('reg-username', error.message);
+        } else if (error.message.includes('correo electrónico ya está en uso')) {
+            setErrorMessage('reg-email', error.message);
+        } else {
+            showAlert(error.message, 'error');
+        }
+    }
+}
+
+function updateRankingFromAdminPanel() {
+    const usernameInput = document.getElementById('admin-username-manual');
+    const gameSelect = document.getElementById('admin-game');
+    const divisionSelect = document.getElementById('admin-division');
+    const scoreInput = document.getElementById('admin-score');
+    
+    const username = usernameInput.value.trim();
+    const game = gameSelect ? gameSelect.value : 'tekken'; 
+    const division = divisionSelect.value;
+    const score = parseInt(scoreInput.value, 10);
+    
+    if (!username || isNaN(score) || score < 0) {
+        showAlert('Debes ingresar un nombre de jugador y una puntuación válida (mayor o igual a 0).', 'error');
         return;
     }
     
-    const username = document.getElementById('reg-username').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
-    const age = parseInt(document.getElementById('reg-age').value);
-    const gender = document.getElementById('reg-gender').value;
+    RankingsModule.updateRanking(game, division, username, score);
+
+    showAlert(`Jugador ${username} actualizado a la división ${division} de ${game} con ${score} puntos.`, 'success');
     
-    try {
-        AuthModule.register({
-            username,
-            email,
-            password,
-            age,
-            gender
-        });
-        
-        showAlert('Registro exitoso. Ahora puedes iniciar sesión.', 'success');
-        showTab('welcome');
-        
-        document.getElementById('register-form').reset();
-    } catch (error) {
-        showAlert(error.message, 'error');
+    usernameInput.value = '';
+    scoreInput.value = '';
+    
+    RankingsModule.renderRankings();
+}
+
+function togglePasswordVisibility(inputId, buttonElement) {
+    const input = document.getElementById(inputId);
+    const isPassword = input.type === 'password';
+    
+    input.type = isPassword ? 'text' : 'password';
+    
+    if (isPassword) {
+        buttonElement.setAttribute('aria-label', 'Ocultar contraseña');
+        // Usamos un color de énfasis para indicar que está visible
+        buttonElement.querySelector('svg').style.color = 'var(--accent-color)'; 
+    } else {
+        buttonElement.setAttribute('aria-label', 'Mostrar contraseña');
+        buttonElement.querySelector('svg').style.color = ''; 
     }
 }
 
@@ -1424,6 +1511,8 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
 
 
 
