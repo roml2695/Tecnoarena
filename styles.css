@@ -64,7 +64,7 @@ body::before {
 
 .container {
     width: 90%;
-    max-width: 2400px;
+    max-width: 7000px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -903,5 +903,6 @@ footer {
 .neon-border:hover {
     box-shadow: 0 0 10px rgba(213, 0, 249, 0.7);
 }
+
 
 
