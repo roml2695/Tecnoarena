@@ -643,32 +643,32 @@ function getDivisionIndex(division) {
 }
 
 function updateLoginUI() {
-    const loginSection = document.getElementById('login-section');
     const state = AppState.getState();
-    
+    const loginSection = document.getElementById('login-section');
+
+    if (!loginSection) return; 
+
+    let htmlContent = '';
+
     if (state.currentUser) {
-        loginSection.innerHTML = `
-            <div class="user-menu">
-                <div class="user-info">
-                    <div class="user-avatar">${state.currentUser.username.charAt(0).toUpperCase()}</div>
-                    <span class="user-name">${state.currentUser.username}</span>
-                </div>
-                <button class="btn btn-secondary" onclick="showTab('user-profile')">Mi Perfil</button>
-                <button class="btn btn-secondary" onclick="showTab('user-panel')">Configuración</button>
-                ${state.currentUser.isAdmin ? '<button class="btn" onclick="showTab(\'admin-panel\')">Admin</button>' : ''}
-                <button class="btn btn-secondary" onclick="logout()">Cerrar Sesión</button>
+        // Usuario logueado
+        const isAdmin = state.currentUser.username === 'admin';
+        htmlContent = `
+            <div class="user-info">
+                <span>Hola, <strong>${state.currentUser.username}</strong></span>
+                ${isAdmin ? '<button class="btn btn-secondary btn-small" onclick="showTab(\'admin-panel\')">ADMIN</button>' : ''}
+                <button class="btn btn-error btn-small" onclick="logout()">Cerrar Sesión</button>
             </div>
         `;
     } else {
-        loginSection.innerHTML = `
-            <div class="login-form">
-                <input type="text" id="username" placeholder="Usuario" aria-label="Nombre de usuario">
-                <input type="password" id="password" placeholder="Contraseña" aria-label="Contraseña">
-                <button onclick="login()">Iniciar Sesión</button>
-                <button class="btn" onclick="showTab('register')">Registrarse</button>
-            </div>
+        // Usuario deslogueado (LOGIN/REGISTRARSE)
+        htmlContent = `
+            <button class="btn btn-secondary" onclick="showTab('login')">LOGIN</button>
+            <button class="btn btn-primary" onclick="showTab('register')">REGISTRARSE</button>
         `;
     }
+
+    loginSection.innerHTML = htmlContent;
 }
 
 function login() {
@@ -1545,6 +1545,7 @@ function fillUserSelect() {
 
 window.RankingsModule = RankingsModule;
 window.showTab = showTab;
+window.updateLoginUI = updateLoginUI;
 window.showGameRanking = showGameRanking;
 window.showDivision = showDivision;
 window.login = login;
@@ -1567,7 +1568,6 @@ window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
 window.renderRequests = renderRequests;
 window.handleRequest = handleRequest;
 window.fillUserSelect = fillUserSelect;
-window.updateLoginUI = updateLoginUI;
 
 
 
