@@ -1384,6 +1384,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     loadDataFromStorage();
+
+    let currentState = AppState.getState();
+    AppState.setState({ 
+        ...currentState, 
+        currentUser: null
     
     UIModule.initAccessibility();
     
@@ -1392,6 +1397,9 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', function() {
             RankingsModule.searchRankings(this.value);
         });
+
+    showTab('welcome');
+    updateLoginUI();
     }
     
     showTab('welcome');
@@ -1418,5 +1426,6 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
