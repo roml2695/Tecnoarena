@@ -592,9 +592,9 @@ function showTab(tabId) {
         }
         
     if (tabId === 'admin-panel') {
-        renderRequests('club');
+        renderRequests('club'); 
         renderRequests('league');
-        fillUserSelect();
+        fillUserSelect();      
     }
 }
 
@@ -773,6 +773,7 @@ function updateRankingFromAdminPanel() {
     let username = '';
     
     if (userSelect && userSelect.value) {
+        // Obtener el nombre del usuario seleccionado (quitando el email)
         username = userSelect.options[userSelect.selectedIndex].textContent.split('(')[0].trim();
     } else {
         username = usernameInput.value.trim();
@@ -790,21 +791,20 @@ function updateRankingFromAdminPanel() {
     const state = AppState.getState();
     let isAlreadyRanked = false;
     let existingDivision = null;
-    let existingGame = null;
 
     for (const div in state.rankings[game]) {
         if (state.rankings[game][div].some(player => player.username === username)) {
             isAlreadyRanked = true;
-            existingDivision = div;
-            existingGame = game;
+            existingDivision = div; 
             break; 
         }
     }
 
     if (isAlreadyRanked) {
-        RankingsModule.updateRanking(existingGame, division, username, score, existingDivision);
+        RankingsModule.updateRanking(game, division, username, score, existingDivision); 
         showAlert(`Jugador ${username} actualizado: Movido a ${division} de ${game} con ${score} puntos.`, 'success');
     } else {
+        // Si no está rankeado, LO AÑADIMOS por primera vez.
         RankingsModule.updateRanking(game, division, username, score);
         showAlert(`Jugador ${username} añadido a ${division} de ${game} con ${score} puntos.`, 'success');
     }
@@ -814,7 +814,7 @@ function updateRankingFromAdminPanel() {
     scoreInput.value = '';
     RankingsModule.renderRankings();
 }
-
+    
 function updateUserProfile() {
     const currentUser = AppState.getState().currentUser;
     if (!currentUser) return;
@@ -1399,29 +1399,31 @@ function saveDataToStorage() {
 
 function loadDataFromStorage() {
     try {
-        const users = JSON.parse(localStorage.getItem('tecnoArenaUsers')) || []; 
-        const rankings = JSON.parse(localStorage.getItem('tecnoArenaRankings')) || { 
-            tekken: { diamante: [], oro: [], plata: [], bronce: [] }, //
-            smash: { diamante: [], oro: [], plata: [], bronce: [] } //
-        };
-        const clubRequests = JSON.parse(localStorage.getItem('tecnoArenaClubRequests')) || []; 
-        const leagueRequests = JSON.parse(localStorage.getItem('tecnoArenaLeagueRequests')) || []; 
+        const storedUsers = localStorage.getItem('tecnoArenaUsers');
+        const storedRankings = localStorage.getItem('tecnoArenaRankings');
+        const storedClubRequests = localStorage.getItem('tecnoArenaClubRequests');
+        const storedLeagueRequests = localStorage.getItem('tecnoArenaLeagueRequests');
+        const storedCurrentUser = localStorage.getItem('tecnoArenaCurrentUser'); 
         
-        const savedUser = localStorage.getItem('tecnoArenaCurrentUser'); 
-       
-        let currentUser = savedUser ? JSON.parse(savedUser) : null; 
-          
-        currentUser = null; 
-
+        const users = storedUsers ? JSON.parse(storedUsers) : [];
+        const rankings = storedRankings ? JSON.parse(storedRankings) : { 
+            tekken: { diamante: [], oro: [], plata: [], bronce: [] }, 
+            smash: { diamante: [], oro: [], plata: [], bronce: [] } 
+        };
+        const clubRequests = storedClubRequests ? JSON.parse(storedClubRequests) : [];
+        const leagueRequests = storedLeagueRequests ? JSON.parse(storedLeagueRequests) : [];
+        
+        const currentUser = null; 
+        
         AppState.setState({ users, rankings, clubRequests, leagueRequests, currentUser }); 
         
-        if (users.length === 0) { 
-            createDefaultAdmin(); 
+        if (users.length === 0) {
+            createDefaultAdmin();
         }
     } catch (error) {
-        console.error('Error al cargar datos:', error); 
-        showAlert('Error al cargar los datos. Se utilizarán datos por defecto.', 'error'); 
-        createDefaultAdmin(); 
+        console.error('Error al cargar datos:', error);
+        showAlert('Error al cargar los datos. Se utilizarán datos por defecto.', 'error');
+        createDefaultAdmin();
     }
 }
 
@@ -1506,23 +1508,20 @@ function handleRequest(requestType, index, action) {
     const state = AppState.getState();
     const requestsKey = requestType === 'club' ? 'clubRequests' : 'leagueRequests';
     
-    
     const updatedRequests = [...state[requestsKey]];
     const request = updatedRequests.splice(index, 1)[0]; 
 
-    
     if (action === 'accept') {
         showAlert(`Solicitud de ${request.username} para ${requestType} aceptada.`, 'success');
     } else {
         showAlert(`Solicitud de ${request.username} para ${requestType} rechazada.`, 'error');
     }
 
-    
     AppState.setState({ 
         [requestsKey]: updatedRequests 
     });
     
-    
+    // Re-renderizar las listas actualizadas
     renderRequests('club');
     renderRequests('league');
 }
@@ -1538,9 +1537,7 @@ function fillUserSelect() {
 
     users.forEach(user => {
         const option = document.createElement('option');
-        // El 'value' debe ser algo único (como el ID o el username)
         option.value = user.id || user.username; 
-        // El 'textContent' es lo que el administrador ve
         option.textContent = `${user.username} (${user.email})`;
         userSelect.appendChild(option);
     });
@@ -1553,7 +1550,6 @@ window.showDivision = showDivision;
 window.login = login;
 window.registerUser = registerUser;
 window.logout = logout;
-window.updateLoginUI = updateLoginUI;
 window.updateUserInfo = updateUserInfo;
 window.submitClubRequest = submitClubRequest;
 window.submitLeagueRequest = submitLeagueRequest;
@@ -1571,6 +1567,8 @@ window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
 window.renderRequests = renderRequests;
 window.handleRequest = handleRequest;
 window.fillUserSelect = fillUserSelect;
+window.updateLoginUI = updateLoginUI;
+
 
 
 
