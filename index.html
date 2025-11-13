@@ -40,18 +40,23 @@
                         </li>
                     </ul>
                 </nav>
-                <div class="login-section" id="login-section">
-                    <form id="login-form">
-                        <div class="form-group">
-                            <label for="login-username">Usuario o Email:</label>
-                            <input type="text" id="login-username" required> 
+                <div class="login-container" id="login-section">
+                    <div id="auth-buttons">
+                        <button class="btn btn-secondary" onclick="toggleLoginForm(true)">LOGIN</button>
+                        <button class="btn btn-primary" onclick="showTab('register')">REGISTRARSE</button>
+                    </div>
+                
+                    <div id="header-login-form-wrapper" style="display: none;">
+                        <form id="header-login-form" class="header-form">
+                            <input type="text" id="header-login-username" placeholder="Usuario o Email" required>
+                            <input type="password" id="header-login-password" placeholder="Contraseña" required>
+                            <button type="button" class="btn btn-secondary btn-small" onclick="login()">Iniciar Sesión</button>
+                            <button type="button" class="btn btn-error btn-small" onclick="toggleLoginForm(false)">X</button>
+                        </form>
+                    </div>
+                
+                    <div id="user-info-display" style="display: none;">
                         </div>
-                        <div class="form-group">
-                            <label for="login-password">Contraseña:</label>
-                            <input type="password" id="login-password" required>
-                        </div>
-                        <button type="button" class="btn btn-primary" onclick="login()">Iniciar Sesión</button>
-                    </form>
                 </div>
             </div>
         </div>
@@ -499,6 +504,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
