@@ -659,33 +659,32 @@ function updateLoginUI() {
     if (!authButtons || !loginFormWrapper || !userInfoDisplay) return;
 
     if (state.currentUser) {
+        
         authButtons.style.display = 'none';
         loginFormWrapper.style.display = 'none';
+        
         userInfoDisplay.style.display = 'flex';
 
         const isAdmin = state.currentUser.username === 'admin';
         
         userInfoDisplay.innerHTML = `
-            <span>Hola, <strong>${state.currentUser.username}</strong></span>
+            <span class="welcome-msg">Hola, <strong>${state.currentUser.username}</strong></span>
+            
+            <button class="btn btn-tertiary btn-small" onclick="showTab('profile-info')">PERFIL</button>
+            <button class="btn btn-tertiary btn-small" onclick="showTab('settings-info')">CONFIGURACIÓN</button>
+            
             ${isAdmin ? '<button class="btn btn-secondary btn-small" onclick="showTab(\'admin-panel\')">ADMIN</button>' : ''}
+            
             <button class="btn btn-error btn-small" onclick="logout()">Cerrar Sesión</button>
         `;
         
     } else {
-        userInfoDisplay.style.display = 'none';
-        loginFormWrapper.style.display = 'none';
-        authButtons.style.display = 'flex';
-    }
-}
 
-function hashPassword(password) {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-        const char = password.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
+        userInfoDisplay.style.display = 'none';
+        
+        authButtons.style.display = 'flex';
+        loginFormWrapper.style.display = 'none';
     }
-    return hash.toString();
 }
 
 function login() {
@@ -1649,6 +1648,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
