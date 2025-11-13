@@ -57,15 +57,6 @@ const AppState = (function() {
 })();
 
 const AuthModule = (function() {
-    function hashPassword(password) {
-        let hash = 0;
-        for (let i = 0; i < password.length; i++) {
-            const char = password.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return hash.toString();
-    }
     
     function validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -686,35 +677,45 @@ function updateLoginUI() {
         authButtons.style.display = 'flex';
     }
 }
-    
+
+function hashPassword(password) {
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+        const char = password.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash.toString();
+}
+
 function login() {
     const usernameOrEmailInput = document.getElementById('header-login-username');
     const passwordInput = document.getElementById('header-login-password');
     
     if (!usernameOrEmailInput || !passwordInput) {
-        showAlert('Error interno: Campos de login no encontrados.', 'error');
+        showAlert('Error: Faltan campos de login en el header.', 'error');
         return;
     }
 
     const identifier = usernameOrEmailInput.value.trim();
-    const password = passwordInput.value; // No hacer trim() a la contraseña
+    const password = passwordInput.value;
     
     if (!identifier || !password) {
         showAlert('Por favor, ingresa tu usuario/email y contraseña.', 'warning');
         return;
     }
-
+    
+    const hashedInputPassword = hashPassword(password);
+    
     const state = AppState.getState();
     
     const user = state.users.find(u => {
         const usernameMatch = u.username.toLowerCase() === identifier.toLowerCase();
-        
         const emailMatch = u.email && u.email.toLowerCase() === identifier.toLowerCase();
-        
         return usernameMatch || emailMatch;
     });
 
-    if (user && user.password === password) {
+    if (user && user.password === hashedInputPassword) { // <--- COMPARACIÓN DE HASHES
         AppState.setState({ currentUser: user });
         showAlert(`¡Bienvenido de vuelta, ${user.username}!`, 'success');
         
@@ -722,6 +723,7 @@ function login() {
         passwordInput.value = '';
 
         updateLoginUI(); 
+        toggleLoginForm(false); // Ocultar el formulario
         
         if (user.username === 'admin') {
             showTab('admin-panel');
@@ -1386,7 +1388,7 @@ function createDefaultAdmin() {
         const defaultAdmin = {
             id: 'admin-123',
             username: 'admin',
-            password: 'admin',
+            password: hashPassword('admin'),
             email: 'admin@tecnoarena.com',
             isAdmin: true,
             score: 0,
@@ -1647,6 +1649,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
