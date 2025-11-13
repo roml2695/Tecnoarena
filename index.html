@@ -55,6 +55,21 @@
                             <button type="button" class="btn btn-error btn-small" onclick="toggleLoginForm(false)">X</button>
                         </form>
                     </div>
+
+                    <div class="user-area"> 
+        
+                        <div id="auth-buttons" style="display: flex;"> 
+                            <button class="btn btn-primary" onclick="toggleLoginForm(true)">LOGIN</button>
+                            <button class="btn btn-secondary" onclick="showTab('register')">REGISTRARSE</button>
+                        </div>
+                        
+                        <div id="user-info-display" style="display: none;">
+                            </div>
+                
+                        <div id="header-login-form-wrapper" style="display: none;">
+                            </div>
+                
+                    </div>
                 
                     <div id="user-info-display" style="display: none;">
                         </div>
@@ -504,6 +519,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
