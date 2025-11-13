@@ -588,6 +588,21 @@ function showTab(tabId) {
     history.pushState(null, '', `#${tabId}`);
 }
 
+function toggleLoginForm(show) {
+    const authButtons = document.getElementById('auth-buttons');
+    const loginFormWrapper = document.getElementById('header-login-form-wrapper');
+    
+    if (authButtons && loginFormWrapper) {
+        if (show) {
+            authButtons.style.display = 'none';
+            loginFormWrapper.style.display = 'flex';
+        } else {
+            authButtons.style.display = 'flex';
+            loginFormWrapper.style.display = 'none';
+        }
+    }
+}
+
 function showGameRanking(game) {
     if (game === 'tekken') {
         document.getElementById('tekken-ranking').style.display = 'block';
@@ -634,52 +649,79 @@ function getDivisionIndex(division) {
 
 function updateLoginUI() {
     const state = AppState.getState();
-    // CRÍTICO: El contenedor debe existir
-    const loginSection = document.getElementById('login-section'); 
+    const authButtons = document.getElementById('auth-buttons');
+    const loginFormWrapper = document.getElementById('header-login-form-wrapper');
+    const userInfoDisplay = document.getElementById('user-info-display');
 
-    if (!loginSection) return; 
-
-    let htmlContent = '';
+    if (!authButtons || !loginFormWrapper || !userInfoDisplay) return;
 
     if (state.currentUser) {
-        // Usuario logueado (incluye botón ADMIN)
-        const isAdmin = state.currentUser.username === 'admin';
-        htmlContent = `
-            <div class="user-info">
-                <span>Hola, <strong>${state.currentUser.username}</strong></span>
-                ${isAdmin ? '<button class="btn btn-secondary btn-small" onclick="showTab(\'admin-panel\')">ADMIN</button>' : ''}
-                <button class="btn btn-error btn-small" onclick="logout()">Cerrar Sesión</button>
-            </div>
-        `;
-    } else {
-        // Usuario deslogueado (Muestra los botones de LOGIN/REGISTRARSE)
-        htmlContent = `
-            <button class="btn btn-secondary" onclick="showTab('login')">LOGIN</button>
-            <button class="btn btn-primary" onclick="showTab('register')">REGISTRARSE</button>
-        `;
-    }
+        authButtons.style.display = 'none';
+        loginFormWrapper.style.display = 'none';
+        userInfoDisplay.style.display = 'flex';
 
-    loginSection.innerHTML = htmlContent;
+        const isAdmin = state.currentUser.username === 'admin';
+        
+        userInfoDisplay.innerHTML = `
+            <span>Hola, <strong>${state.currentUser.username}</strong></span>
+            ${isAdmin ? '<button class="btn btn-secondary btn-small" onclick="showTab(\'admin-panel\')">ADMIN</button>' : ''}
+            <button class="btn btn-error btn-small" onclick="logout()">Cerrar Sesión</button>
+        `;
+        
+    } else {
+        userInfoDisplay.style.display = 'none';
+        loginFormWrapper.style.display = 'none';
+        authButtons.style.display = 'flex';
+    }
 }
     
 function login() {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
+    const usernameOrEmailInput = document.getElementById('header-login-username');
+    const passwordInput = document.getElementById('header-login-password');
     
-    if (!username || !password) {
-        showAlert('Por favor, completa todos los campos', 'error');
+    if (!usernameOrEmailInput || !passwordInput) {
+        const mainUsername = document.getElementById('login-username');
+        const mainPassword = document.getElementById('login-password');
+        
+        if (!mainUsername || !mainPassword) {
+             showAlert('Error: No se encontraron los campos de login.', 'error');
+             return;
+        }
+
+        var identifier = mainUsername.value.trim();
+        var password = mainPassword.value;
+
+    } else {
+        var identifier = usernameOrEmailInput.value.trim();
+        var password = passwordInput.value;
+    }
+
+    if (!identifier || !password) {
+        showAlert('Por favor, ingresa tu usuario/email y contraseña.', 'warning');
         return;
     }
-    
-    if (AuthModule.login(username, password)) {
-        showAlert('Inicio de sesión exitoso', 'success');
+
+    const state = AppState.getState();
+    const user = state.users.find(u => 
+        u.username.toLowerCase() === identifier.toLowerCase() || 
+        u.email.toLowerCase() === identifier.toLowerCase()
+    );
+
+    if (user && user.password === password) {
+        AppState.setState({ currentUser: user });
+        showAlert(`¡Bienvenido de vuelta, ${user.username}!`, 'success');
+        
+        if (usernameOrEmailInput) usernameOrEmailInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+        
+        updateLoginUI(); 
+        
         showTab('welcome');
-        updateLoginUI();
+
     } else {
-        showAlert('Usuario o contraseña incorrectos', 'error');
+        showAlert('Error de inicio de sesión: Usuario o contraseña incorrectos.', 'error');
     }
 }
-
 function registerUser() {
     const usernameInput = document.getElementById('reg-username');
     const emailInput = document.getElementById('reg-email');
@@ -1560,6 +1602,7 @@ window.updateLoginUI = updateLoginUI;
 window.login = login;
 window.registerUser = registerUser;
 window.logout = logout;
+window.toggleLoginForm = toggleLoginForm;
 
 // PRIORITY 2: Funciones y Módulos de Estado
 window.RankingsModule = RankingsModule;
@@ -1586,6 +1629,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
