@@ -562,22 +562,22 @@ const UIModule = (function() {
 
 function showTab(tabId) {
     const state = AppState.getState();
-
+    
     document.querySelectorAll('main section').forEach(section => {
         section.classList.remove('active');
     });
 
     const activeSection = document.getElementById(tabId);
-    
     if (activeSection) {
         activeSection.classList.add('active');
-    } 
-    
-    if ((tabId === 'login' || tabId === 'register') && state.currentUser) {
-        showTab('welcome'); 
+    }
+
+    if ((tabId === 'register') && state.currentUser) {
+        showTab('welcome'); // Redirige a welcome si ya estás logueado
+        return; // Detiene la ejecución para evitar doble cambio
     }
     
-    if (tabId === 'admin-panel') {
+    if (tabId === 'admin-panel' && state.currentUser && state.currentUser.username === 'admin') {
         if (typeof renderRequests === 'function') {
             renderRequests('club'); 
             renderRequests('league');
@@ -675,7 +675,7 @@ function login() {
     const passwordInput = document.getElementById('header-login-password');
     
     if (!usernameOrEmailInput || !passwordInput) {
-        showAlert('Error: Faltan campos de login en el header.', 'error');
+        showAlert('Error: No se encontraron los campos de login en el header. ¿El formulario está visible?', 'error');
         return;
     }
 
@@ -689,7 +689,6 @@ function login() {
 
     const state = AppState.getState();
     
-    // Buscar usuario: comparación insensible a mayúsculas/minúsculas
     const user = state.users.find(u => 
         u.username.toLowerCase() === identifier.toLowerCase() || 
         u.email.toLowerCase() === identifier.toLowerCase()
@@ -702,9 +701,8 @@ function login() {
         usernameOrEmailInput.value = '';
         passwordInput.value = '';
 
-        toggleLoginForm(false); 
-        
         updateLoginUI(); 
+        
         if (user.username === 'admin') {
             showTab('admin-panel');
         } else {
@@ -1625,6 +1623,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
