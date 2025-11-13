@@ -687,6 +687,16 @@ function updateLoginUI() {
     }
 }
 
+function hashPassword(password) {
+    let hash = 0;
+    for (let i = 0; i < password.length; i++) {
+        const char = password.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return hash.toString();
+}
+
 function login() {
     const usernameOrEmailInput = document.getElementById('header-login-username');
     const passwordInput = document.getElementById('header-login-password');
@@ -1648,6 +1658,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
