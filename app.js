@@ -680,21 +680,12 @@ function login() {
     const passwordInput = document.getElementById('header-login-password');
     
     if (!usernameOrEmailInput || !passwordInput) {
-        const mainUsername = document.getElementById('login-username');
-        const mainPassword = document.getElementById('login-password');
-        
-        if (!mainUsername || !mainPassword) {
-             showAlert('Error: No se encontraron los campos de login.', 'error');
-             return;
-        }
-
-        var identifier = mainUsername.value.trim();
-        var password = mainPassword.value;
-
-    } else {
-        var identifier = usernameOrEmailInput.value.trim();
-        var password = passwordInput.value;
+        showAlert('Error: Faltan campos de login en el header.', 'error');
+        return;
     }
+
+    const identifier = usernameOrEmailInput.value.trim();
+    const password = passwordInput.value;
 
     if (!identifier || !password) {
         showAlert('Por favor, ingresa tu usuario/email y contraseña.', 'warning');
@@ -702,6 +693,8 @@ function login() {
     }
 
     const state = AppState.getState();
+    
+    // Buscar usuario: comparación insensible a mayúsculas/minúsculas
     const user = state.users.find(u => 
         u.username.toLowerCase() === identifier.toLowerCase() || 
         u.email.toLowerCase() === identifier.toLowerCase()
@@ -711,17 +704,23 @@ function login() {
         AppState.setState({ currentUser: user });
         showAlert(`¡Bienvenido de vuelta, ${user.username}!`, 'success');
         
-        if (usernameOrEmailInput) usernameOrEmailInput.value = '';
-        if (passwordInput) passwordInput.value = '';
+        usernameOrEmailInput.value = '';
+        passwordInput.value = '';
+
+        toggleLoginForm(false); 
         
         updateLoginUI(); 
-        
-        showTab('welcome');
+        if (user.username === 'admin') {
+            showTab('admin-panel');
+        } else {
+            showTab('welcome');
+        }
 
     } else {
         showAlert('Error de inicio de sesión: Usuario o contraseña incorrectos.', 'error');
     }
 }
+
 function registerUser() {
     const usernameInput = document.getElementById('reg-username');
     const emailInput = document.getElementById('reg-email');
@@ -1461,20 +1460,22 @@ function loadDataFromStorage() {
 }
 
 function createDefaultAdmin() {
-    const adminUser = {
-        id: AuthModule.generateId(),
-        username: 'admin',
-        email: 'admin@tecnoarena.com',
-        password: AuthModule.hashPassword('admin123'),
-        age: 30,
-        gender: 'masculino',
-        isAdmin: true,
-        leagues: [],
-        clubMembership: null,
-        createdAt: new Date().toISOString()
-    };
+    const state = AppState.getState();
+    const adminExists = state.users.some(u => u.username === 'admin');
     
-    AppState.setState({ users: [adminUser] });
+    if (!adminExists) {
+        const defaultAdmin = {
+            id: 'admin-123',
+            username: 'admin',
+            password: 'admin',
+            email: 'admin@tecnoarena.com',
+            isAdmin: true,
+            score: 0,
+            club: null,
+            league: null
+        };
+        AppState.setState({ users: [...state.users, defaultAdmin] });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1629,6 +1630,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
