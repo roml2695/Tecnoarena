@@ -561,20 +561,22 @@ const UIModule = (function() {
 })();
 
 function showTab(tabId) {
+    const state = AppState.getState();
+
     document.querySelectorAll('main section').forEach(section => {
         section.classList.remove('active');
     });
 
     const activeSection = document.getElementById(tabId);
+    
     if (activeSection) {
         activeSection.classList.add('active');
-    }
+    } 
     
-    if ((tabId === 'login' || tabId === 'register') && AppState.getState().currentUser) {
-        // Si ya está logueado, redirige a welcome o perfil
+    if ((tabId === 'login' || tabId === 'register') && state.currentUser) {
         showTab('welcome'); 
     }
-
+    
     if (tabId === 'admin-panel') {
         if (typeof renderRequests === 'function') {
             renderRequests('club'); 
@@ -586,21 +588,14 @@ function showTab(tabId) {
     }
 
     history.pushState(null, '', `#${tabId}`);
-}
-
-function toggleLoginForm(show) {
-    const authButtons = document.getElementById('auth-buttons');
-    const loginFormWrapper = document.getElementById('header-login-form-wrapper');
     
-    if (authButtons && loginFormWrapper) {
-        if (show) {
-            authButtons.style.display = 'none';
-            loginFormWrapper.style.display = 'flex';
+    document.querySelectorAll('nav ul li a').forEach(a => {
+        if (a.getAttribute('onclick') && a.getAttribute('onclick').includes(`'${tabId}'`)) {
+            a.setAttribute('aria-current', 'page');
         } else {
-            authButtons.style.display = 'flex';
-            loginFormWrapper.style.display = 'none';
+            a.removeAttribute('aria-current');
         }
-    }
+    });
 }
 
 function showGameRanking(game) {
@@ -1630,6 +1625,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
