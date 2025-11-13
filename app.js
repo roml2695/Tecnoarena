@@ -692,13 +692,13 @@ function login() {
     const passwordInput = document.getElementById('header-login-password');
     
     if (!usernameOrEmailInput || !passwordInput) {
-        showAlert('Error: No se encontraron los campos de login en el header. ¿El formulario está visible?', 'error');
+        showAlert('Error interno: Campos de login no encontrados.', 'error');
         return;
     }
 
     const identifier = usernameOrEmailInput.value.trim();
-    const password = passwordInput.value;
-
+    const password = passwordInput.value; // No hacer trim() a la contraseña
+    
     if (!identifier || !password) {
         showAlert('Por favor, ingresa tu usuario/email y contraseña.', 'warning');
         return;
@@ -706,10 +706,13 @@ function login() {
 
     const state = AppState.getState();
     
-    const user = state.users.find(u => 
-        u.username.toLowerCase() === identifier.toLowerCase() || 
-        u.email.toLowerCase() === identifier.toLowerCase()
-    );
+    const user = state.users.find(u => {
+        const usernameMatch = u.username.toLowerCase() === identifier.toLowerCase();
+        
+        const emailMatch = u.email && u.email.toLowerCase() === identifier.toLowerCase();
+        
+        return usernameMatch || emailMatch;
+    });
 
     if (user && user.password === password) {
         AppState.setState({ currentUser: user });
@@ -1375,6 +1378,25 @@ async function clearAllRankings() {
     }
 }
 
+function createDefaultAdmin() {
+    const state = AppState.getState();
+    const adminExists = state.users.some(u => u.username === 'admin');
+    
+    if (!adminExists) {
+        const defaultAdmin = {
+            id: 'admin-123',
+            username: 'admin',
+            password: 'admin',
+            email: 'admin@tecnoarena.com',
+            isAdmin: true,
+            score: 0,
+            club: null,
+            league: null
+        };
+        AppState.setState({ users: [...state.users, defaultAdmin] });
+    }
+}
+
 async function resetAllData() {
     const confirmed = await UIModule.confirmAction(
         '¿Estás seguro de que quieres restablecer todos los datos? Esta acción no se puede deshacer.'
@@ -1469,24 +1491,7 @@ function loadDataFromStorage() {
     }
 }
 
-function createDefaultAdmin() {
-    const state = AppState.getState();
-    const adminExists = state.users.some(u => u.username === 'admin');
-    
-    if (!adminExists) {
-        const defaultAdmin = {
-            id: 'admin-123',
-            username: 'admin',
-            password: 'admin',
-            email: 'admin@tecnoarena.com',
-            isAdmin: true,
-            score: 0,
-            club: null,
-            league: null
-        };
-        AppState.setState({ users: [...state.users, defaultAdmin] });
-    }
-}
+
 
 document.addEventListener('DOMContentLoaded', function() {
     AppState.subscribe(state => {
@@ -1498,6 +1503,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     loadDataFromStorage(); 
+    
+    createDefaultAdmin();
     
     UIModule.initAccessibility();
     
@@ -1640,6 +1647,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
