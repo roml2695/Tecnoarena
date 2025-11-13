@@ -659,14 +659,12 @@ function updateLoginUI() {
     if (!authButtons || !loginFormWrapper || !userInfoDisplay) return;
 
     if (state.currentUser) {
-        
         authButtons.style.display = 'none';
         loginFormWrapper.style.display = 'none';
         
         userInfoDisplay.style.display = 'flex';
-
-        const isAdmin = state.currentUser.username === 'admin';
         
+        const isAdmin = state.currentUser.username === 'admin';
         userInfoDisplay.innerHTML = `
             <span class="welcome-msg">Hola, <strong>${state.currentUser.username}</strong></span>
             
@@ -677,13 +675,12 @@ function updateLoginUI() {
             
             <button class="btn btn-error btn-small" onclick="logout()">Cerrar Sesión</button>
         `;
-        
-    } else {
 
+    } else {
         userInfoDisplay.style.display = 'none';
         
         authButtons.style.display = 'flex';
-        loginFormWrapper.style.display = 'none';
+        loginFormWrapper.style.display = 'none'; 
     }
 }
 
@@ -743,6 +740,16 @@ function login() {
     } else {
         showAlert('Error de inicio de sesión: Usuario o contraseña incorrectos.', 'error');
     }
+}
+
+function logout() {
+    AppState.setState({ currentUser: null }); 
+
+    showTab('welcome'); 
+    
+    updateLoginUI(); 
+    
+    showAlert('Sesión cerrada con éxito. ¡Vuelve pronto!', 'success');
 }
 
 function registerUser() {
@@ -1658,6 +1665,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
