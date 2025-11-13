@@ -598,6 +598,23 @@ function showTab(tabId) {
     });
 }
 
+function toggleLoginForm(show) {
+    const authButtons = document.getElementById('auth-buttons');
+    const loginFormWrapper = document.getElementById('header-login-form-wrapper');
+    
+    if (authButtons && loginFormWrapper) {
+        if (show) {
+            // Si 'show' es true (clic en LOGIN)
+            authButtons.style.display = 'none';
+            loginFormWrapper.style.display = 'flex';
+        } else {
+            // Si 'show' es false (clic en X o después de logout)
+            authButtons.style.display = 'flex';
+            loginFormWrapper.style.display = 'none';
+        }
+    }
+}
+
 function showGameRanking(game) {
     if (game === 'tekken') {
         document.getElementById('tekken-ranking').style.display = 'block';
@@ -1623,6 +1640,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
