@@ -313,6 +313,15 @@ main {
     padding: 40px 0;
 }
 
+main section {
+    display: none;
+    padding: 20px 0; 
+}
+
+main section.active {
+    display: block; 
+}
+
 .welcome-section {
     background: rgba(15, 25, 35, 0.7);
     padding: 40px;
@@ -991,6 +1000,7 @@ footer {
 .password-toggle:hover {
     color: var(--primary-color);
 }
+
 
 
 
