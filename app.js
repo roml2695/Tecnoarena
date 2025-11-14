@@ -676,44 +676,27 @@ function getDivisionIndex(division) {
 
 function updateLoginUI() {
     const state = AppState.getState();
-    const authButtons = document.getElementById('auth-buttons');
-    const loginFormWrapper = document.getElementById('header-login-form-wrapper');
-    const userInfoDisplay = document.getElementById('user-info-display');
+    const currentUser = state.currentUser;
+    const isLoggedIn = !!currentUser; 
 
-    // Mantenemos esta verificación de seguridad
-    if (!authButtons || !loginFormWrapper || !userInfoDisplay) {
-        console.error("Faltan elementos del header (auth-buttons, login-form, or user-info)");
-        return;
-    }
+    const unloggedActions = document.getElementById('auth-unlogged-actions');
+    const loggedActions = document.getElementById('auth-logged-actions');
+    const adminButton = document.getElementById('admin-panel-btn');
 
-    if (state.currentUser) {
+    if (unloggedActions && loggedActions) {
+        unloggedActions.classList.toggle('hidden', isLoggedIn);
         
-        authButtons.style.display = 'none'; 
-        
-        loginFormWrapper.style.display = 'none'; 
-        
-        userInfoDisplay.style.display = 'flex';
+        loggedActions.classList.toggle('hidden', !isLoggedIn);
 
-        const isAdmin = state.currentUser.username === 'admin';
-        userInfoDisplay.innerHTML = `
-            <span class="welcome-msg">Hola, <strong>${state.currentUser.username}</strong></span>
-            
-            <button class="btn btn-tertiary btn-small" onclick="showTab('profile-info')">PERFIL</button>
-            
-            <button class="btn btn-tertiary btn-small" onclick="showTab('profile-info')">CONFIGURACIÓN</button> 
-            
-            ${isAdmin ? '<button class="btn btn-secondary btn-small" onclick="showTab(\'admin-panel\')">ADMIN</button>' : ''}
-            
-            <button class="btn btn-error btn-small" onclick="logout()">Cerrar Sesión</button>
-        `;
+        if (adminButton) {
+            const isAdmin = isLoggedIn && currentUser.role === 'admin';
+            adminButton.classList.toggle('hidden', !isAdmin); 
+        }
 
-    } else {
-        
-        userInfoDisplay.style.display = 'none';
-        
-        authButtons.style.display = 'flex'; 
-        
-        loginFormWrapper.style.display = 'none'; 
+        const currentTab = document.querySelector('.tab-content:not(.hidden)');
+        if (isLoggedIn && currentTab && currentTab.id === 'welcome') {
+            showTab('profile');
+        }
     }
 }
 
@@ -1698,6 +1681,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
