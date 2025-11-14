@@ -84,11 +84,28 @@
                 <p>¡Únete a nuestra comunidad y lleva tu experiencia de gaming al siguiente nivel!</p>
             </section>
 
-            <section id="profile-info" class="content-section">
-                <div class="container">
-                    <h2>Mi Perfil</h2>
-                    <p>Aquí se mostrará la información personal y estadísticas del usuario.</p>
-                    </div>
+            <section id="profile-info" class="tab-content profile-page neon-border" style="display: none;">
+                <h2>Mi Perfil</h2>
+                <p>Aquí puedes ver tu información personal y estadísticas.</p>
+            
+                <div id="profile-details-container" class="form-container">
+                    <h3>Actualizar Información Personal</h3>
+                    <form id="update-profile-form">
+                        <div class="input-group">
+                            <label for="update-username">Nombre de Usuario</label>
+                            <input type="text" id="update-username" name="username" required disabled>
+                        </div>
+                        <div class="input-group">
+                            <label for="update-email">Correo Electrónico</label>
+                            <input type="email" id="update-email" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="update-new-password">Nueva Contraseña (Opcional)</label>
+                            <input type="password" id="update-new-password" name="newPassword">
+                        </div>
+                        <button type="submit" class="btn btn-primary" onclick="updateUserInfo(event)">Guardar Cambios</button>
+                    </form>
+                </div>
             </section>
             
             <section id="settings-info" class="content-section">
@@ -514,6 +531,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
