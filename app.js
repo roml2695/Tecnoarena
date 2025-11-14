@@ -675,7 +675,8 @@ function updateLoginUI() {
             <span class="welcome-msg">Hola, <strong>${state.currentUser.username}</strong></span>
             
             <button class="btn btn-tertiary btn-small" onclick="showTab('profile-info')">PERFIL</button>
-            <button class="btn btn-tertiary btn-small" onclick="showTab('settings-info')">CONFIGURACIÓN</button>
+            
+            <button class="btn btn-tertiary btn-small" onclick="showTab('profile-info')">CONFIGURACIÓN</button> 
             
             ${isAdmin ? '<button class="btn btn-secondary btn-small" onclick="showTab(\'admin-panel\')">ADMIN</button>' : ''}
             
@@ -1673,6 +1674,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
