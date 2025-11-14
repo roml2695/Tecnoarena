@@ -656,14 +656,20 @@ function updateLoginUI() {
     const loginFormWrapper = document.getElementById('header-login-form-wrapper');
     const userInfoDisplay = document.getElementById('user-info-display');
 
-    if (!authButtons || !loginFormWrapper || !userInfoDisplay) return;
+    // Mantenemos esta verificación de seguridad
+    if (!authButtons || !loginFormWrapper || !userInfoDisplay) {
+        console.error("Faltan elementos del header (auth-buttons, login-form, or user-info)");
+        return;
+    }
 
     if (state.currentUser) {
-        authButtons.style.display = 'none';
-        loginFormWrapper.style.display = 'none';
+        
+        authButtons.style.display = 'none'; 
+        
+        loginFormWrapper.style.display = 'none'; 
         
         userInfoDisplay.style.display = 'flex';
-        
+
         const isAdmin = state.currentUser.username === 'admin';
         userInfoDisplay.innerHTML = `
             <span class="welcome-msg">Hola, <strong>${state.currentUser.username}</strong></span>
@@ -677,9 +683,11 @@ function updateLoginUI() {
         `;
 
     } else {
+        
         userInfoDisplay.style.display = 'none';
         
-        authButtons.style.display = 'flex';
+        authButtons.style.display = 'flex'; 
+        
         loginFormWrapper.style.display = 'none'; 
     }
 }
@@ -1665,6 +1673,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
