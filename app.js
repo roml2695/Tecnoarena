@@ -296,6 +296,29 @@ const RankingsModule = (function() {
             });
         });
     }
+
+    function changePage(game, division, pageNumber) {
+        const state = AppState.getState();
+        
+        // 1. Validar y actualizar el número de página en el estado
+        const newPage = Math.max(1, pageNumber);
+        
+        AppState.setState({ 
+            ui: { 
+                ...state.ui, 
+                currentPage: {
+                    ...state.ui.currentPage,
+                    [game]: {
+                        ...state.ui.currentPage[game],
+                        [division]: newPage
+                    }
+                }
+            } 
+        });
+        
+        // 2. Volver a renderizar la clasificación con la nueva página
+        renderRankings(game, division);
+    }
     
     function loadSampleData() {
         const sampleRankings = {
@@ -382,6 +405,7 @@ const RankingsModule = (function() {
         renderRankings,
         loadSampleData,
         clearAllRankings,
+        changePage,
         
         goToPage(game, division, page) {
             AppState.setCurrentPage(game, division, page);
@@ -1674,6 +1698,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
