@@ -287,24 +287,12 @@
             
             <section id="register" class="form-container main-content-section">
                 <h2>Registro de Usuario</h2>
-                <form id="register-form">
-
+                <form id="register-form" onsubmit="event.preventDefault(); registerUser();">
+    
                     <div class="form-group">
                         <label for="reg-fullname">Nombre y Apellido:</label>
                         <input type="text" id="reg-fullname" name="fullname" required aria-describedby="reg-fullname-error">
                         <div class="error-message" id="reg-fullname-error" role="alert"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reg-username">Nombre de usuario:</label>
-                        <input type="text" id="reg-username" required minlength="3" maxlength="20" aria-describedby="reg-username-error">
-                        <div class="error-message" id="reg-username-error" role="alert"></div>
-                    </div>
-
-                    div class="form-group">
-                        <label for="reg-email">Correo electrónico:</label>
-                        <input type="email" id="reg-email" required aria-describedby="reg-email-error">
-                        <div class="error-message" id="reg-email-error" role="alert"></div>
                     </div>
                     
                     <div class="form-group">
@@ -313,45 +301,63 @@
                         <div class="error-message" id="reg-phone-error" role="alert"></div>
                     </div>
                     
-                    <div class="form-group password-group">
-                        <label for="reg-password">Contraseña:</label>
-                        <input type="password" id="reg-password" required minlength="6" aria-describedby="reg-password-error">
-                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password', this)" aria-label="Mostrar contraseña">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px">
-                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/>
-                            </svg>
-                        </button>
-                        <div class="error-message" id="reg-password-error" role="alert"></div>
+                    <div class="form-group">
+                        <label for="reg-username">Nombre de usuario (Nick):</label>
+                        <input type="text" id="reg-username" name="username" required aria-describedby="reg-username-error">
+                        <div class="error-message" id="reg-username-error" role="alert"></div>
                     </div>
                     
-                    <div class="form-group password-group">
-                        <label for="reg-confirm-password">Confirmar contraseña:</label>
-                        <input type="password" id="reg-confirm-password" required aria-describedby="reg-confirm-password-error">
-                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)" aria-label="Mostrar contraseña">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px">
-                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5zm0-7a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/>
-                            </svg>
-                        </button>
+                    <div class="form-group">
+                        <label for="reg-email">Correo electrónico:</label>
+                        <input type="email" id="reg-email" name="email" required aria-describedby="reg-email-error">
+                        <div class="error-message" id="reg-email-error" role="alert"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-password">Contraseña:</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="reg-password" name="password" required aria-describedby="reg-password-error">
+                            <span class="password-toggle" onclick="togglePasswordVisibility('reg-password', this)">
+                                <svg id="reg-password-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                                    <path fill="currentColor" d="M288 80c-63.5 0-118.8 33.6-152.9 85.3 1.3-4.7 2.9-9.3 4.9-13.8C176.6 90.5 229.8 64 288 64c92.8 0 167.9 66.8 174.5 155.3-2.3-4.4-4.7-8.8-7.2-13.1-34.1-51.7-89.4-85.3-152.9-85.3zM288 368a80 80 0 1 0 0-160 80 80 0 1 0 0 160zm168-80a208.7 208.7 0 0 0-64.6-96.2c3.5 1.5 6.9 3.2 10.3 5.2 26.6 15.6 48.7 37.8 67.2 64.9 3.6 5.3 6.9 10.7 9.8 16.2zM288 432c-157.7 0-288-144-288-144 0 0 128.6-144 288-144 14.1 0 28.1 1.1 41.7 3.3C316 112 302 128 288 128a160 160 0 1 0 102.3 277.5c-15.6 2.3-31.5 3.5-47.8 3.5zm250.3-46.7c-17.5 25.1-40.7 46.4-66.2 63.8-3.4 2.2-6.8 4.3-10.2 6.2 3.4 1.9 6.8 4 10.2 6.2 25.5 17.4 48.7 38.7 66.2 63.8 12.3 17.6 22.8 36.6 30.5 56.8H576c-9.1-23.7-22.1-46.1-38.3-66.7-18.1-22.1-39.7-41.5-64.6-57.9 3.6 5.3 6.9 10.7 9.8 16.2z"/>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="error-message" id="reg-password-error" role="alert"></div>
+                    </div>
+                
+                    <div class="form-group">
+                        <label for="reg-confirm-password">Confirmar Contraseña:</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="reg-confirm-password" name="confirm_password" required aria-describedby="reg-confirm-password-error">
+                            <span class="password-toggle" onclick="togglePasswordVisibility('reg-confirm-password', this)">
+                                <svg id="reg-confirm-password-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                                    <path fill="currentColor" d="M288 80c-63.5 0-118.8 33.6-152.9 85.3 1.3-4.7 2.9-9.3 4.9-13.8C176.6 90.5 229.8 64 288 64c92.8 0 167.9 66.8 174.5 155.3-2.3-4.4-4.7-8.8-7.2-13.1-34.1-51.7-89.4-85.3-152.9-85.3zM288 368a80 80 0 1 0 0-160 80 80 0 1 0 0 160zm168-80a208.7 208.7 0 0 0-64.6-96.2c3.5 1.5 6.9 3.2 10.3 5.2 26.6 15.6 48.7 37.8 67.2 64.9 3.6 5.3 6.9 10.7 9.8 16.2zM288 432c-157.7 0-288-144-288-144 0 0 128.6-144 288-144 14.1 0 28.1 1.1 41.7 3.3C316 112 302 128 288 128a160 160 0 1 0 102.3 277.5c-15.6 2.3-31.5 3.5-47.8 3.5zm250.3-46.7c-17.5 25.1-40.7 46.4-66.2 63.8-3.4 2.2-6.8 4.3-10.2 6.2 3.4 1.9 6.8 4 10.2 6.2 25.5 17.4 48.7 38.7 66.2 63.8 12.3 17.6 22.8 36.6 30.5 56.8H576c-9.1-23.7-22.1-46.1-38.3-66.7-18.1-22.1-39.7-41.5-64.6-57.9 3.6 5.3 6.9 10.7 9.8 16.2z"/>
+                                </svg>
+                            </span>
+                        </div>
                         <div class="error-message" id="reg-confirm-password-error" role="alert"></div>
                     </div>
                     
                     <div class="form-group">
                         <label for="reg-age">Edad:</label>
-                        <input type="number" id="reg-age" min="13" max="120" required aria-describedby="reg-age-error">
+                        <input type="number" id="reg-age" name="age" required min="13" max="120" aria-describedby="reg-age-error">
                         <div class="error-message" id="reg-age-error" role="alert"></div>
                     </div>
+                    
                     <div class="form-group">
                         <label for="reg-gender">Sexo:</label>
-                        <select id="reg-gender" required aria-describedby="reg-gender-error">
-                            <option value="">Selecciona una opción</option>
-                            <option value="masculino">Masculino</option>
-                            <option value="femenino">Femenino</option>
-                            <option value="otro">Otro</option>
-                            <option value="prefiero-no-decir">Prefiero no decir</option>
+                        <select id="reg-gender" name="gender" required aria-describedby="reg-gender-error">
+                            <option value="" disabled selected>Selecciona tu sexo</option>
+                            <option value="male">Masculino</option>
+                            <option value="female">Femenino</option>
+                            <option value="other">Otro</option>
+                            <option value="not-say">Prefiero no decir</option>
                         </select>
                         <div class="error-message" id="reg-gender-error" role="alert"></div>
                     </div>
-                    <button type="button" class="btn" onclick="registerUser()">Registrarse</button>
+                    
+                    <button type="submit" class="btn btn-primary">Registrarse</button>
                 </form>
             </section>
 
@@ -555,6 +561,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
