@@ -181,86 +181,42 @@
             </section>
 
             <section id="ranking-divisions" class="main-content-section">
-                <h2>Ranking de Divisiones</h2>
-                
-                <div class="game-selector">
-                    <button class="btn" onclick="showGameRanking('tekken')">Tekken 8</button>
-                    <button class="btn" onclick="showGameRanking('smash')">Super Smash Ultimate</button>
-                </div>
-                
-                <div class="search-container">
-                    <label for="ranking-search" class="sr-only">Buscar jugador</label>
-                    <input 
-                        type="text" 
-                        id="ranking-search" 
-                        class="search-input" 
-                        placeholder="Buscar jugador..." 
-                        aria-label="Buscar jugador en el ranking"
-                    >
-                </div>
-                
-                <div class="spinner" id="ranking-spinner"></div>
-                
-                <div id="tekken-ranking">
-                    <h3>Tekken 8 - Ranking por División</h3>
+                <div class="container main-content-section">
+                    <h2>Liga Tecno Arena - Ranking de Divisiones</h2>
                     
-                    <div class="division-tabs">
-                        <div class="division-tab active" onclick="showDivision('tekken', 'diamante')" aria-selected="true">Diamante</div>
-                        <div class="division-tab" onclick="showDivision('tekken', 'oro')" aria-selected="false">Oro</div>
-                        <div class="division-tab" onclick="showDivision('tekken', 'plata')" aria-selected="false">Plata</div>
-                        <div class="division-tab" onclick="showDivision('tekken', 'bronce')" aria-selected="false">Bronce</div>
+                    <div class="tabs game-tabs">
+                        <button class="btn btn-tab active" onclick="showGameRanking('tekken')">Tekken</button>
+                        <button class="btn btn-tab" onclick="showGameRanking('smash')">Smash Bros</button>
                     </div>
-                    
-                    <div id="tekken-diamante" class="division-content active">
-                        <h4 class="division-diamond">División Diamante</h4>
-                        <div id="tekken-diamante-container"></div>
+            
+                    <div id="tekken-ranking" class="ranking-game-container">
+                        <h3>Ranking Tekken</h3>
+                        <div class="tabs division-tabs">
+                            <button class="btn btn-tab active" onclick="showDivision('tekken', 'diamante')">Diamante</button>
+                            <button class="btn btn-tab" onclick="showDivision('tekken', 'oro')">Oro</button>
+                            <button class="btn btn-tab" onclick="showDivision('tekken', 'plata')">Plata</button>
+                            <button class="btn btn-tab" onclick="showDivision('tekken', 'bronce')">Bronce</button>
+                        </div>
+                        <div id="tekken-ranking-content">
+                            </div>
                     </div>
-                    
-                    <div id="tekken-oro" class="division-content">
-                        <h4 class="division-gold">División Oro</h4>
-                        <div id="tekken-oro-container"></div>
+            
+                    <div id="smash-ranking" class="ranking-game-container" style="display: none;">
+                        <h3>Ranking Smash Bros</h3>
+                        <div class="tabs division-tabs">
+                            <button class="btn btn-tab active" onclick="showDivision('smash', 'diamante')">Diamante</button>
+                            <button class="btn btn-tab" onclick="showDivision('smash', 'oro')">Oro</button>
+                            <button class="btn btn-tab" onclick="showDivision('smash', 'plata')">Plata</button>
+                            <button class="btn btn-tab" onclick="showDivision('smash', 'bronce')">Bronce</button>
+                        </div>
+                        <div id="smash-ranking-content">
+                            </div>
                     </div>
-                    
-                    <div id="tekken-plata" class="division-content">
-                        <h4 class="division-silver">División Plata</h4>
-                        <div id="tekken-plata-container"></div>
+            
+                    <div class="ranking-controls">
+                        <input type="text" id="ranking-search" placeholder="Buscar por usuario..." onkeyup="RankingsModule.updateSearchTerm(this.value)">
                     </div>
-                    
-                    <div id="tekken-bronce" class="division-content">
-                        <h4 class="division-bronze">División Bronce</h4>
-                        <div id="tekken-bronce-container"></div>
-                    </div>
-                </div>
-                
-                <div id="smash-ranking" style="display: none;">
-                    <h3>Super Smash Ultimate - Ranking por División</h3>
-                    
-                    <div class="division-tabs">
-                        <div class="division-tab active" onclick="showDivision('smash', 'diamante')" aria-selected="true">Diamante</div>
-                        <div class="division-tab" onclick="showDivision('smash', 'oro')" aria-selected="false">Oro</div>
-                        <div class="division-tab" onclick="showDivision('smash', 'plata')" aria-selected="false">Plata</div>
-                        <div class="division-tab" onclick="showDivision('smash', 'bronce')" aria-selected="false">Bronce</div>
-                    </div>
-                    
-                    <div id="smash-diamante" class="division-content active">
-                        <h4 class="division-diamond">División Diamante</h4>
-                        <div id="smash-diamante-container"></div>
-                    </div>
-                    
-                    <div id="smash-oro" class="division-content">
-                        <h4 class="division-gold">División Oro</h4>
-                        <div id="smash-oro-container"></div>
-                    </div>
-                    
-                    <div id="smash-plata" class="division-content">
-                        <h4 class="division-silver">División Plata</h4>
-                        <div id="smash-plata-container"></div>
-                    </div>
-                    
-                    <div id="smash-bronce" class="division-content">
-                        <h4 class="division-bronze">División Bronce</h4>
-                        <div id="smash-bronce-container"></div>
-                    </div>
+            
                 </div>
             </section>
 
@@ -561,6 +517,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
