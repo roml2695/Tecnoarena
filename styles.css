@@ -200,6 +200,34 @@ nav a:hover::before, nav a:focus::before {
     width: 100%;
 }
 
+header nav ul li a {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 10px 15px;
+    display: block; 
+    transition: color 0.3s ease;
+}
+
+header nav ul li a:hover {
+    color: var(--neon-purple);
+}
+
+.dropdown-content a {
+    color: var(--text-color);
+    padding: 10px 20px;
+    text-decoration: none;
+    display: block;
+    background-color: var(--secondary-color); 
+    border-bottom: 1px solid var(--primary-dark);
+    transition: background-color 0.3s ease;
+    white-space: nowrap; 
+}
+
+.dropdown-content a:hover {
+    background-color: var(--secondary-light); 
+    color: var(--primary-light);
+}
+
 .dropdown-content {
     display: none;
     position: absolute;
@@ -1032,6 +1060,7 @@ footer {
 .hidden {
     display: none !important;
 }
+
 
 
 
