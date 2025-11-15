@@ -54,9 +54,9 @@
                     <div class="user-area"> 
 
                         <div id="auth-unlogged-actions" class="header-actions">
-                            <button class="btn btn-login" onclick="showTab('login-tab')">Login</button>
+                            <button class="btn btn-login" onclick="toggleLoginForm(true)">Login</button>
                             
-                            <button class="btn btn-register" onclick="showTab('register-tab')">Registrarse</button> 
+                            <button class="btn btn-register" onclick="showTab('register')">Registrarse</button>
                         </div>
                         
                         <div id="auth-logged-actions" class="header-actions hidden">
@@ -288,15 +288,29 @@
             <section id="register" class="tabs form-container">
                 <h2>Registro de Usuario</h2>
                 <form id="register-form">
+
+                    <div class="form-group">
+                        <label for="reg-fullname">Nombre y Apellido:</label>
+                        <input type="text" id="reg-fullname" name="fullname" required aria-describedby="reg-fullname-error">
+                        <div class="error-message" id="reg-fullname-error" role="alert"></div>
+                    </div>
+
                     <div class="form-group">
                         <label for="reg-username">Nombre de usuario:</label>
                         <input type="text" id="reg-username" required minlength="3" maxlength="20" aria-describedby="reg-username-error">
                         <div class="error-message" id="reg-username-error" role="alert"></div>
                     </div>
-                    <div class="form-group">
+
+                    div class="form-group">
                         <label for="reg-email">Correo electrónico:</label>
                         <input type="email" id="reg-email" required aria-describedby="reg-email-error">
                         <div class="error-message" id="reg-email-error" role="alert"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-phone">Teléfono:</label>
+                        <input type="tel" id="reg-phone" name="phone" required aria-describedby="reg-phone-error">
+                        <div class="error-message" id="reg-phone-error" role="alert"></div>
                     </div>
                     
                     <div class="form-group password-group">
@@ -541,6 +555,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
