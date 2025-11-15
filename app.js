@@ -1537,7 +1537,7 @@ function loadDataFromStorage() {
 
 
 
-document.addEventListener('DOMContentLoaded', function() {
+, function() {
     AppState.subscribe(state => {
         if (state.ui.loading) {
             UIModule.setLoadingState(true);
@@ -1662,7 +1662,10 @@ document.addEventListener('DOMContentLoaded', () => {
     showTab('welcome'); 
     
     if (typeof updateLoginUI === 'function') {
-        updateLoginUI(); 
+        updateLoginUI();      
+    }
+    if (typeof showDivision === 'function') {
+        showDivision('tekken', 'diamante');
     }
 });
 
@@ -1699,6 +1702,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
