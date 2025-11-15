@@ -614,18 +614,18 @@ function showTab(tabId) {
 }
 
 function toggleLoginForm(show) {
-    const authButtons = document.getElementById('auth-buttons');
     const loginFormWrapper = document.getElementById('header-login-form-wrapper');
+    const authUnloggedActions = document.getElementById('auth-unlogged-actions');
     
-    if (authButtons && loginFormWrapper) {
+    if (loginFormWrapper && authUnloggedActions) {
         if (show) {
-            // Si 'show' es true (clic en LOGIN)
-            authButtons.style.display = 'none';
-            loginFormWrapper.style.display = 'flex';
+            loginFormWrapper.style.display = 'flex'; 
+            authUnloggedActions.style.display = 'none'; // Oculta los botones
         } else {
-            // Si 'show' es false (clic en X o después de logout)
-            authButtons.style.display = 'flex';
-            loginFormWrapper.style.display = 'none';
+            loginFormWrapper.style.display = 'none'; // Oculta el formulario
+            if (!AppState.getState().currentUser) {
+                authUnloggedActions.style.display = 'flex';
+            }
         }
     }
 }
@@ -769,53 +769,67 @@ function logout() {
 }
 
 function registerUser() {
+    const fullnameInput = document.getElementById('reg-fullname');
+    const phoneInput = document.getElementById('reg-phone');
     const usernameInput = document.getElementById('reg-username');
     const emailInput = document.getElementById('reg-email');
     const passwordInput = document.getElementById('reg-password');
-    const confirmPasswordInput = document.getElementById('reg-confirm-password');
     const ageInput = document.getElementById('reg-age');
     const genderInput = document.getElementById('reg-gender');
 
-    const username = usernameInput.value.trim();
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    const confirmPassword = confirmPasswordInput.value;
-    const age = parseInt(ageInput.value, 10);
-    const gender = genderInput.value;
+    const fullname = fullnameInput ? fullnameInput.value.trim() : '';
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value : '';
+    const age = parseInt(ageInput ? ageInput.value : 0);
+    const gender = genderInput ? genderInput.value : '';
 
-    function setErrorMessage(elementId, message) {
-        const errorElement = document.getElementById(elementId + '-error');
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = message ? 'block' : 'none';
+    const setErrorMessage = (id, message) => {
+        const element = document.getElementById(id + '-error');
+        if (element) {
+            element.textContent = message;
+            element.style.display = message ? 'block' : 'none';
         }
-    }
+    };
+    
+    ['reg-fullname', 'reg-phone', 'reg-username', 'reg-email', 'reg-password', 'reg-age', 'reg-gender'].forEach(id => setErrorMessage(id, ''));
 
-    ['reg-username', 'reg-email', 'reg-password', 'reg-confirm-password', 'reg-age', 'reg-gender'].forEach(id => setErrorMessage(id, ''));
-    
     let isValid = true;
+
+    if (!fullname) {
+        setErrorMessage('reg-fullname', 'El nombre y apellido son obligatorios.');
+        isValid = false;
+    }
     
-    if (!username || username.length < 3) {
-        setErrorMessage('reg-username', 'El nombre de usuario debe tener al menos 3 caracteres.');
+    if (!phone) {
+        setErrorMessage('reg-phone', 'El teléfono es obligatorio.');
+        isValid = false;
+    } else if (!/^\+?[0-9\s-]{7,}$/.test(phone)) { 
+        setErrorMessage('reg-phone', 'El formato del teléfono no es válido.');
         isValid = false;
     }
-    if (!AuthModule.validateEmail(email)) {
-        setErrorMessage('reg-email', 'El correo electrónico no es válido.');
+    
+    if (!username) {
+        setErrorMessage('reg-username', 'El nombre de usuario es obligatorio.');
         isValid = false;
     }
+    
+    if (!email || !AuthModule.validateEmail(email)) {
+        setErrorMessage('reg-email', 'Ingresa un correo electrónico válido.');
+        isValid = false;
+    }
+    
     if (password.length < 6) {
         setErrorMessage('reg-password', 'La contraseña debe tener al menos 6 caracteres.');
         isValid = false;
     }
-    // VALIDACIÓN CLAVE: Las contraseñas no coinciden.
-    if (password !== confirmPassword) {
-        setErrorMessage('reg-confirm-password', 'Las contraseñas no coinciden.');
-        isValid = false;
-    }
+    
     if (isNaN(age) || age < 13 || age > 120) {
-        setErrorMessage('reg-age', 'Debes ser mayor de 13 años.');
+        setErrorMessage('reg-age', 'Debes ingresar una edad válida (mínimo 13 años).');
         isValid = false;
     }
+    
     if (!gender) {
         setErrorMessage('reg-gender', 'Debes seleccionar un sexo.');
         isValid = false;
@@ -827,7 +841,15 @@ function registerUser() {
     }
 
     try {
-        AuthModule.register({ username, email, password, age, gender });
+        AuthModule.register({ 
+            fullname, 
+            phone,    
+            username, 
+            email, 
+            password, 
+            age, 
+            gender 
+        });
         showAlert('Registro exitoso. Ahora puedes iniciar sesión.', 'success');
         showTab('welcome');
         document.getElementById('register-form').reset();
@@ -841,7 +863,6 @@ function registerUser() {
         }
     }
 }
-
 function updateRankingFromAdminPanel() {
     const userSelect = document.getElementById('admin-user-select'); 
     const usernameInput = document.getElementById('admin-username-manual'); 
@@ -1681,6 +1702,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
