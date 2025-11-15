@@ -576,43 +576,32 @@ const UIModule = (function() {
 })();
 
 function showTab(tabId) {
-    const state = AppState.getState();
-    
-    document.querySelectorAll('main section').forEach(section => {
+    const sections = document.querySelectorAll('.main-content-section');
+    sections.forEach(section => {
         section.classList.remove('active');
+        section.style.display = 'none'; 
     });
 
-    const activeSection = document.getElementById(tabId);
-    if (activeSection) {
-        activeSection.classList.add('active');
+    const targetSection = document.getElementById(tabId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+        targetSection.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    if ((tabId === 'register') && state.currentUser) {
-        showTab('welcome'); // Redirige a welcome si ya estás logueado
-        return; // Detiene la ejecución para evitar doble cambio
-    }
-    
-    if (tabId === 'admin-panel' && state.currentUser && state.currentUser.username === 'admin') {
-        if (typeof renderRequests === 'function') {
-            renderRequests('club'); 
-            renderRequests('league');
-        }
-        if (typeof fillUserSelect === 'function') {
-            fillUserSelect();      
-        }
+    if (typeof toggleLoginForm === 'function') {
+        toggleLoginForm(false); 
     }
 
-    history.pushState(null, '', `#${tabId}`);
-    
-    document.querySelectorAll('nav ul li a').forEach(a => {
-        if (a.getAttribute('onclick') && a.getAttribute('onclick').includes(`'${tabId}'`)) {
-            a.setAttribute('aria-current', 'page');
-        } else {
-            a.removeAttribute('aria-current');
-        }
-    });
+    if (typeof AppState !== 'undefined' && AppState.getState) {
+        AppState.setState({ 
+            ui: { 
+                ...AppState.getState().ui, 
+                currentTab: tabId 
+            } 
+        });
+    }
 }
-
 function toggleLoginForm(show) {
     const loginFormWrapper = document.getElementById('header-login-form-wrapper');
     const authUnloggedActions = document.getElementById('auth-unlogged-actions');
@@ -1669,6 +1658,14 @@ function togglePasswordVisibility(inputId, buttonElement) {
     }
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    showTab('welcome'); 
+    
+    if (typeof updateLoginUI === 'function') {
+        updateLoginUI(); 
+    }
+});
+
 // PRIORITY 1: Funciones de Interfaz de Usuario para el Header y Enlaces
 window.showTab = showTab; 
 window.updateLoginUI = updateLoginUI; 
@@ -1702,6 +1699,7 @@ window.rejectLeagueRequest = rejectLeagueRequest;
 window.loadSampleRankings = loadSampleRankings;
 window.clearAllRankings = clearAllRankings;
 window.resetAllData = resetAllData;
+
 
 
 
