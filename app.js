@@ -1,26 +1,101 @@
+/**
+ * =========================================================================
+ * MÓDULO DE ESTADO GLOBAL (AppState)
+ * Maneja el estado central de la aplicación y la persistencia local.
+ * =========================================================================
+ */
 const AppState = (function() {
     let state = {
-        currentUser: null,
-        users: [],
-        rankings: { 
+        currentUser: null, // Objeto del usuario logueado
+        users: [],         // Lista completa de usuarios
+        rankings: {        // Rankings por juego y división
             tekken: { diamante: [], oro: [], plata: [], bronce: [] },
             smash: { diamante: [], oro: [], plata: [], bronce: [] }
         },
-        clubRequests: [],
-        leagueRequests: [],
+        clubRequests: [],  // Solicitudes pendientes de Club
+        leagueRequests: [],// Solicitudes pendientes de Liga
         ui: {
-            loading: false,
-            currentPage: {
-                tekken: { diamante: 1, oro: 1, plata: 1, bronce: 1 },
-                smash: { diamante: 1, oro: 1, plata: 1, bronce: 1 }
-            },
-            itemsPerPage: 5,
-            searchTerm: ''
+            currentTab: 'welcome',
+            currentRankingGame: 'tekken',
+            currentRankingDivision: 'diamante',
+            tekkenSearchTerm: '',
+            smashSearchTerm: ''
         }
     };
     
     const subscribers = [];
-    
+    const STORAGE_KEY = 'tecnoArenaState';
+
+    // Carga los datos desde localStorage
+    function loadDataFromStorage() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                const loadedState = JSON.parse(data);
+                // Fusionar estado guardado con estado inicial, asegurando la estructura.
+                state = { 
+                    ...state, 
+                    ...loadedState,
+                    // Asegurar que los arrays y objetos de ranking/solicitudes existen
+                    rankings: loadedState.rankings || state.rankings,
+                    users: loadedState.users || state.users,
+                    clubRequests: loadedState.clubRequests || state.clubRequests,
+                    leagueRequests: loadedState.leagueRequests || state.leagueRequests,
+                    ui: { ...state.ui, ...loadedState.ui }
+                };
+            }
+        } catch (e) {
+            console.error('Error loading state from storage:', e);
+        }
+    }
+
+    // Guarda el estado en localStorage
+    function saveDataToStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.error('Error saving state to storage:', e);
+        }
+    }
+
+    // Inicializa la aplicación, carga datos y configura el usuario Admin inicial si no existe
+    function initialize() {
+        loadDataFromStorage();
+
+        // 1. Crear usuario Admin inicial si no existe
+        const adminEmail = 'admin@tecnoarena.com';
+        if (!state.users.find(u => u.email === adminEmail)) {
+            const initialAdmin = {
+                id: crypto.randomUUID(),
+                fullname: 'Administrador Principal',
+                phone: '0000000000',
+                username: 'admin',
+                email: adminEmail,
+                password: 'password123', // Usar hash en un entorno real
+                age: 30,
+                gender: 'not-say',
+                isAdmin: true,
+                isMember: true,
+                clubRequestStatus: 'approved',
+                leagueRequestStatus: 'approved'
+            };
+            state.users.push(initialAdmin);
+            state.currentUser = initialAdmin;
+        } else if (state.currentUser) {
+             // Refrescar el currentUser si ya estaba logueado, para tener los datos más recientes
+             state.currentUser = state.users.find(u => u.id === state.currentUser.id);
+        }
+        
+        // 2. Cargar rankings de ejemplo si están vacíos
+        if (Object.values(state.rankings.tekken).every(arr => arr.length === 0)) {
+            loadSampleRankings();
+        }
+
+        saveDataToStorage(); // Guardar el estado inicial
+        // Notificar a los suscriptores
+        subscribers.forEach(callback => callback(state));
+    }
+
     return {
         getState() {
             return { ...state };
@@ -28,8 +103,8 @@ const AppState = (function() {
         
         setState(newState) {
             state = { ...state, ...newState };
-            subscribers.forEach(callback => callback(state));
             saveDataToStorage();
+            subscribers.forEach(callback => callback(state));
         },
         
         subscribe(callback) {
@@ -40,740 +115,861 @@ const AppState = (function() {
             };
         },
         
-        setLoading(loading) {
-            this.setState({ ui: { ...state.ui, loading } });
-        },
+        initialize,
         
-        setSearchTerm(term) {
-            this.setState({ ui: { ...state.ui, searchTerm: term } });
-        },
-        
-        setCurrentPage(game, division, page) {
-            const currentPage = { ...state.ui.currentPage };
-            currentPage[game][division] = page;
-            this.setState({ ui: { ...state.ui, currentPage } });
-        }
+        // Exportar saveDataToStorage para uso externo (Herramientas Admin)
+        saveDataToStorage
     };
 })();
 
+/**
+ * =========================================================================
+ * UTILERÍAS GLOBALES (Alertas, Diálogos de Confirmación)
+ * Reemplaza alert()/confirm() por modales customizados.
+ * =========================================================================
+ */
+
+// Muestra un modal de alerta personalizado
+function showAlert(message, type = 'info') {
+    const overlay = document.getElementById('alert-overlay');
+    const msgElement = document.getElementById('alert-message');
+    const titleElement = document.getElementById('alert-title');
+    
+    if (overlay && msgElement && titleElement) {
+        msgElement.textContent = message;
+        titleElement.textContent = type === 'error' ? 'Error' : 
+                                  type === 'success' ? 'Éxito' : 
+                                  'Información';
+        
+        // Aplicar estilo basado en el tipo (opcional, se puede hacer con clases)
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideAlert() {
+    const overlay = document.getElementById('alert-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Muestra un diálogo de confirmación personalizado
+let pendingConfirmAction = null;
+
+function showConfirmDialog(title, message, callback) {
+    const overlay = document.getElementById('confirm-overlay');
+    const titleEl = document.getElementById('confirm-title');
+    const messageEl = document.getElementById('confirm-message');
+    const buttonEl = document.getElementById('confirm-action-button');
+
+    if (overlay && titleEl && messageEl && buttonEl) {
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        
+        // Asignar la función de callback
+        buttonEl.onclick = () => {
+            callback();
+            hideConfirmDialog();
+        };
+
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideConfirmDialog() {
+    const overlay = document.getElementById('confirm-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Utilería para manejar confirmación antes de ejecutar una función
+function confirmAction(actionCode, title, message) {
+    showConfirmDialog(title, message, () => {
+        try {
+            // Evaluar el string de código de acción. (Usar con precaución y solo con funciones controladas)
+            eval(actionCode); 
+        } catch (e) {
+            console.error("Error al ejecutar acción confirmada:", e);
+            showAlert('Ocurrió un error al ejecutar la acción.', 'error');
+        }
+    });
+}
+
+/**
+ * =========================================================================
+ * MÓDULO DE AUTENTICACIÓN (AuthModule)
+ * Maneja las operaciones de login, registro y validación.
+ * =========================================================================
+ */
 const AuthModule = (function() {
-    
+
     function validateEmail(email) {
+        // Validación de formato de correo simple
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
+        return re.test(String(email).toLowerCase());
     }
-    
-    function generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+    function findUser(identifier) {
+        const state = AppState.getState();
+        // Busca por username o email
+        return state.users.find(u => u.username === identifier || u.email === identifier);
+    }
+
+    function login(identifier, password) {
+        const user = findUser(identifier);
+
+        if (!user) {
+            throw new Error('Usuario o correo no encontrado.');
+        }
+
+        // Validación de contraseña simple (comparación de texto plano)
+        if (user.password !== password) {
+            throw new Error('Contraseña incorrecta.');
+        }
+
+        // Iniciar sesión
+        AppState.setState({ currentUser: user });
+    }
+
+    function register(userData) {
+        const state = AppState.getState();
+        
+        if (findUser(userData.username)) {
+            throw new Error('El nombre de usuario ya está en uso.');
+        }
+
+        if (state.users.find(u => u.email === userData.email)) {
+            throw new Error('El correo electrónico ya está en uso.');
+        }
+
+        const newUser = {
+            id: crypto.randomUUID(),
+            fullname: userData.fullname,
+            phone: userData.phone,
+            username: userData.username,
+            email: userData.email,
+            password: userData.password, // En un entorno real, la contraseña debe ser hasheada
+            age: userData.age,
+            gender: userData.gender,
+            isAdmin: false,
+            isMember: false,
+            clubRequestStatus: 'none', // none, pending, approved, rejected
+            leagueRequestStatus: 'none'
+        };
+
+        const updatedUsers = [...state.users, newUser];
+        AppState.setState({ users: updatedUsers });
+    }
+
+    function logout() {
+        AppState.setState({ currentUser: null });
+        showAlert('Sesión cerrada correctamente.', 'success');
+        showTab('welcome');
     }
     
     return {
-        login(username, password) {
-            const state = AppState.getState();
-            const user = state.users.find(u => 
-                u.username === username && u.password === hashPassword(password)
-            );
-            
-            if (user) {
-                AppState.setState({ currentUser: user });
-                return true;
-            }
-            return false;
-        },
-        
-        register(userData) {
-            const state = AppState.getState();
-            
-            if (state.users.find(u => u.username === userData.username)) {
-                throw new Error('El nombre de usuario ya está en uso');
-            }
-            
-            if (state.users.find(u => u.email === userData.email)) {
-                throw new Error('El correo electrónico ya está en uso');
-            }
-            
-            const newUser = {
-                id: generateId(),
-                ...userData,
-                password: hashPassword(userData.password),
-                isAdmin: false,
-                leagues: [],
-                clubMembership: null,
-                createdAt: new Date().toISOString()
-            };
-            
-            const newUsers = [...state.users, newUser];
-            AppState.setState({ users: newUsers });
-            
-            return newUser;
-        },
-        
-        logout() {
-            AppState.setState({ currentUser: null });
-        },
-        
-        updateUser(userId, updates) {
-            const state = AppState.getState();
-            const userIndex = state.users.findIndex(u => u.id === userId);
-            
-            if (userIndex === -1) return false;
-            
-            const updatedUsers = [...state.users];
-            updatedUsers[userIndex] = { ...updatedUsers[userIndex], ...updates };
-            
-            AppState.setState({ 
-                users: updatedUsers,
-                currentUser: state.currentUser && state.currentUser.id === userId ? 
-                    updatedUsers[userIndex] : state.currentUser
-            });
-            
-            return true;
-        },
-        
+        login,
+        register,
+        logout,
         validateEmail,
-        hashPassword,
-        generateId
+        findUser
     };
 })();
 
+/**
+ * =========================================================================
+ * MÓDULO DE RANKINGS (RankingsModule)
+ * Maneja la visualización y filtrado de los rankings.
+ * =========================================================================
+ */
 const RankingsModule = (function() {
-    function filterAndPaginateRankings(rankings, searchTerm, page, itemsPerPage) {
-        let filtered = rankings;
-        if (searchTerm) {
-            filtered = rankings.filter(player => 
-                player.username.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-        
-        const startIndex = (page - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginated = filtered.slice(startIndex, endIndex);
-        
-        return {
-            items: paginated,
-            totalPages: Math.ceil(filtered.length / itemsPerPage),
-            totalItems: filtered.length,
-            currentPage: page
-        };
-    }
-    
-    function updateRanking(game, division, username, score) {
-        const state = AppState.getState();
-        const rankings = { ...state.rankings };
-        
-        // Eliminar de cualquier división existente
-        Object.keys(rankings[game]).forEach(div => {
-            rankings[game][div] = rankings[game][div].filter(p => p.username !== username);
-        });
-        
-        // Agregar a la división correspondiente
-        rankings[game][division].push({ username, score });
-        
-        // Ordenar por puntuación
-        rankings[game][division].sort((a, b) => b.score - a.score);
-        
-        AppState.setState({ rankings });
-        
-        return { success: true };
-    }
-    
-    
-    function loadRankings() {
-        renderRankings();
-    }
-    
-    function renderRankings() {
-        const state = AppState.getState();
-        const { searchTerm, currentPage, itemsPerPage } = state.ui;
-        
-        const games = ['tekken', 'smash'];
-        const divisions = ['diamante', 'oro', 'plata', 'bronce'];
-        
-        games.forEach(game => {
-            const gameVisible = document.getElementById(`${game}-ranking`).style.display !== 'none';
-            if (!gameVisible) return;
-            
-            divisions.forEach(division => {
-                const container = document.getElementById(`${game}-${division}-container`);
-                if (!container) return;
-                
-                const result = filterAndPaginateRankings(
-                    state.rankings[game][division], 
-                    searchTerm, 
-                    currentPage[game][division], 
-                    itemsPerPage
-                );
-                
-                if (result.items.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-ranking-message">
-                            <p>No hay jugadores en esta división</p>
-                            <p class="small-text">Los rankings se mostrarán cuando un administrador cargue datos</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                let tableHTML = `
-                    <table class="data-table" aria-label="Ranking de ${game} división ${division}">
-                        <thead>
-                            <tr>
-                                <th scope="col">Posición</th>
-                                <th scope="col">Jugador</th>
-                                <th scope="col">Puntuación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                result.items.forEach((player, index) => {
-                    const position = ((currentPage[game][division] - 1) * itemsPerPage) + index + 1;
-                    tableHTML += `
-                        <tr>
-                            <td>${position}</td>
-                            <td>${player.username}</td>
-                            <td>${player.score}</td>
-                        </tr>
-                    `;
-                });
-                
-                tableHTML += `
-                        </tbody>
-                    </table>
-                `;
-                
-                if (result.totalPages > 1) {
-                    tableHTML += `
-                        <div class="pagination" role="navigation" aria-label="Paginación para ${game} ${division}">
-                    `;
-                    
-                    tableHTML += `
-                        <button 
-                            ${currentPage[game][division] === 1 ? 'disabled' : ''}
-                            onclick="RankingsModule.goToPage('${game}', '${division}', ${currentPage[game][division] - 1})"
-                            aria-label="Página anterior"
-                        >
-                            &laquo;
-                        </button>
-                    `;
-                    
-                    for (let i = 1; i <= result.totalPages; i++) {
-                        tableHTML += `
-                            <button 
-                                ${i === currentPage[game][division] ? 'class="active"' : ''}
-                                onclick="RankingsModule.goToPage('${game}', '${division}', ${i})"
-                                aria-label="Página ${i}"
-                                ${i === currentPage[game][division] ? 'aria-current="page"' : ''}
-                            >
-                                ${i}
-                            </button>
-                        `;
-                    }
-                    
-                    tableHTML += `
-                        <button 
-                            ${currentPage[game][division] === result.totalPages ? 'disabled' : ''}
-                            onclick="RankingsModule.goToPage('${game}', '${division}', ${currentPage[game][division] + 1})"
-                            aria-label="Página siguiente"
-                        >
-                            &raquo;
-                        </button>
-                    `;
-                    
-                    tableHTML += `</div>`;
-                    
-                    tableHTML += `
-                        <div role="status" aria-live="polite" class="sr-only">
-                            Mostrando página ${currentPage[game][division]} de ${result.totalPages}, 
-                            ${((currentPage[game][division] - 1) * itemsPerPage) + 1} a 
-                            ${Math.min(currentPage[game][division] * itemsPerPage, result.totalItems)} de 
-                            ${result.totalItems} resultados
-                        </div>
-                    `;
-                }
-                
-                container.innerHTML = tableHTML;
-            });
-        });
-    }
 
-    function changePage(game, division, pageNumber) {
+    function renderRankingTable(game, division) {
         const state = AppState.getState();
+        const container = document.getElementById(`${game}-ranking-content`);
+        const searchTerm = state.ui[`${game}SearchTerm`].toLowerCase();
         
-        // 1. Validar y actualizar el número de página en el estado
-        const newPage = Math.max(1, pageNumber);
-        
-        AppState.setState({ 
-            ui: { 
-                ...state.ui, 
-                currentPage: {
-                    ...state.ui.currentPage,
-                    [game]: {
-                        ...state.ui.currentPage[game],
-                        [division]: newPage
-                    }
-                }
-            } 
-        });
-        
-        // 2. Volver a renderizar la clasificación con la nueva página
-        renderRankings(game, division);
-    }
-    
-    function loadSampleData() {
-        const sampleRankings = {
-            tekken: {
-                diamante: [
-                    { username: 'ProPlayer1', score: 2500 },
-                    { username: 'ProPlayer2', score: 2450 },
-                    { username: 'ProPlayer3', score: 2400 }
-                ],
-                oro: [
-                    { username: 'Player4', score: 1800 },
-                    { username: 'Player5', score: 1750 },
-                    { username: 'Player6', score: 1700 }
-                ],
-                plata: [
-                    { username: 'Player7', score: 1200 },
-                    { username: 'Player8', score: 1150 },
-                    { username: 'Player9', score: 1100 }
-                ],
-                bronce: [
-                    { username: 'Player10', score: 800 },
-                    { username: 'Player11', score: 750 },
-                    { username: 'Player12', score: 700 }
-                ]
-            },
-            smash: {
-                diamante: [
-                    { username: 'SmashPro1', score: 2600 },
-                    { username: 'SmashPro2', score: 2550 },
-                    { username: 'SmashPro3', score: 2500 }
-                ],
-                oro: [
-                    { username: 'Player13', score: 1900 },
-                    { username: 'Player14', score: 1850 },
-                    { username: 'Player15', score: 1800 }
-                ],
-                plata: [
-                    { username: 'Player16', score: 1300 },
-                    { username: 'Player17', score: 1250 },
-                    { username: 'Player18', score: 1200 }
-                ],
-                bronce: [
-                    { username: 'Player19', score: 900 },
-                    { username: 'Player20', score: 850 },
-                    { username: 'Player21', score: 800 }
-                ]
-            }
-        };
-        
-        AppState.setState({ rankings: sampleRankings });
-        renderRankings();
-        
-        return { success: true, message: 'Datos de ejemplo cargados correctamente' };
-    }
-    
-    function clearAllRankings() {
-        const emptyRankings = {
-            tekken: { diamante: [], oro: [], plata: [], bronce: [] },
-            smash: { diamante: [], oro: [], plata: [], bronce: [] }
-        };
-        
-        AppState.setState({ rankings: emptyRankings });
-        renderRankings();
-        
-        return { success: true, message: 'Todos los rankings han sido limpiados' };
-    }
-    
-    return {
-        getRankings(game, division) {
-            const state = AppState.getState();
-            const { searchTerm, currentPage, itemsPerPage } = state.ui;
-            const rankings = state.rankings[game][division];
-            
-            return filterAndPaginateRankings(
-                rankings, 
-                searchTerm, 
-                currentPage[game][division], 
-                itemsPerPage
-            );
-        },
-        
-        updateRanking,
-        loadRankings,
-        renderRankings,
-        loadSampleData,
-        clearAllRankings,
-        changePage,
-        
-        goToPage(game, division, page) {
-            AppState.setCurrentPage(game, division, page);
-            this.renderRankings();
-        },
-        
-        searchRankings(term) {
-            AppState.setSearchTerm(term);
-            const state = AppState.getState();
-            const games = ['tekken', 'smash'];
-            const divisions = ['diamante', 'oro', 'plata', 'bronce'];
-            
-            games.forEach(game => {
-                divisions.forEach(division => {
-                    AppState.setCurrentPage(game, division, 1);
-                });
-            });
-            
-            this.renderRankings();
-        }
-    };
-})();
+        if (!container) return;
 
-const UIModule = (function() {
-    const Components = {
-        ConfirmDialog: function(message, onConfirm, onCancel) {
-            const dialog = document.createElement('dialog');
-            dialog.innerHTML = `
-                <div class="confirm-dialog" role="dialog" aria-labelledby="confirm-title" aria-modal="true">
-                    <h3 id="confirm-title">Confirmar acción</h3>
-                    <p>${message}</p>
-                    <div class="dialog-actions">
-                        <button class="btn btn-secondary" data-action="cancel">Cancelar</button>
-                        <button class="btn btn-error" data-action="confirm">Confirmar</button>
-                    </div>
-                </div>
-            `;
-            
-            dialog.querySelector('[data-action="confirm"]').addEventListener('click', () => {
-                onConfirm();
-                dialog.close();
-                document.body.removeChild(dialog);
-            });
-            
-            dialog.querySelector('[data-action="cancel"]').addEventListener('click', () => {
-                if (onCancel) onCancel();
-                dialog.close();
-                document.body.removeChild(dialog);
-            });
-            
-            dialog.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    if (onCancel) onCancel();
-                    dialog.close();
-                    document.body.removeChild(dialog);
-                } else if (e.key === 'Tab') {
-                    const focusableElements = dialog.querySelectorAll('button');
-                    const firstElement = focusableElements[0];
-                    const lastElement = focusableElements[focusableElements.length - 1];
-                    
-                    if (e.shiftKey) {
-                        if (document.activeElement === firstElement) {
-                            lastElement.focus();
-                            e.preventDefault();
-                        }
-                    } else {
-                        if (document.activeElement === lastElement) {
-                            firstElement.focus();
-                            e.preventDefault();
-                        }
-                    }
-                }
-            });
-            
-            document.body.appendChild(dialog);
-            dialog.showModal();
-            
-            dialog.querySelector('button').focus();
-        },
+        // 1. Obtener y filtrar los datos
+        const divisionRankings = state.rankings[game][division] || [];
         
-        LoadingSpinner: function(message = 'Cargando...') {
-            return `
-                <div class="loading-spinner" role="status" aria-live="polite">
-                    <div class="spinner" aria-hidden="true"></div>
-                    <span class="sr-only">${message}</span>
-                    <p>${message}</p>
-                </div>
-            `;
-        }
-    };
-    
-    function setLoadingState(loading) {
-        const mainElement = document.querySelector('main');
-        const container = document.querySelector('.container');
-        
-        if (loading) {
-            container.classList.add('loading');
-            const spinner = Components.LoadingSpinner();
-            mainElement.insertAdjacentHTML('beforeend', spinner);
+        let filteredRankings = divisionRankings.filter(player => {
+            return player.username.toLowerCase().includes(searchTerm);
+        });
+
+        // 2. Ordenar por puntuación (mayor a menor)
+        filteredRankings.sort((a, b) => b.score - a.score);
+
+        // 3. Construir la tabla
+        let tableHTML = `
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Jugador</th>
+                        <th>División</th>
+                        <th>Puntuación</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        if (filteredRankings.length === 0) {
+            tableHTML += `<tr><td colspan="4" style="text-align: center; color: var(--primary-light);">No hay jugadores en esta división/filtro.</td></tr>`;
         } else {
-            container.classList.remove('loading');
-            const spinner = document.querySelector('.loading-spinner');
-            if (spinner) spinner.remove();
+            filteredRankings.forEach((player, index) => {
+                const rank = index + 1;
+                const divisionClass = `division-${division}`;
+                tableHTML += `
+                    <tr>
+                        <td>${rank}</td>
+                        <td>${player.username}</td>
+                        <td class="${divisionClass}">${division.charAt(0).toUpperCase() + division.slice(1)}</td>
+                        <td>${player.score}</td>
+                    </tr>
+                `;
+            });
         }
+
+        tableHTML += `</tbody></table>`;
+        container.innerHTML = tableHTML;
     }
     
-    function initAccessibility() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                document.body.classList.add('keyboard-navigation');
+    function updateSearchTerm(game, term) {
+        const state = AppState.getState();
+        const newState = {
+            ui: {
+                ...state.ui,
+                [`${game}SearchTerm`]: term
             }
-        });
-        
-        document.addEventListener('mousedown', () => {
-            document.body.classList.remove('keyboard-navigation');
-        });
-        
-        const tabs = document.querySelectorAll('[onclick*="showTab"]');
-        tabs.forEach(tab => {
-            const match = tab.getAttribute('onclick').match(/'([^']+)'/);
-            if (match) {
-                const tabId = match[1];
-                const target = document.getElementById(tabId);
-                
-                if (target) {
-                    tab.setAttribute('aria-controls', tabId);
-                    if (target.classList.contains('active') || target.id === 'welcome') {
-                        tab.setAttribute('aria-selected', 'true');
-                    } else {
-                        tab.setAttribute('aria-selected', 'false');
-                    }
-                }
-            }
-        });
-        
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.setAttribute('novalidate', 'true');
-        });
+        };
+        AppState.setState(newState);
+        // El renderizado se disparará a través del listener de AppState
     }
-    
+
     return {
-        Components,
-        setLoadingState,
-        initAccessibility,
-        
-        confirmAction(message) {
-            return new Promise((resolve) => {
-                Components.ConfirmDialog(message, () => resolve(true), () => resolve(false));
-            });
-        },
-        
-        updateAriaStates(activeTabId) {
-            const tabs = document.querySelectorAll('[onclick*="showTab"]');
-            tabs.forEach(tab => {
-                const match = tab.getAttribute('onclick').match(/'([^']+)'/);
-                if (match) {
-                    const tabId = match[1];
-                    if (tabId === activeTabId) {
-                        tab.setAttribute('aria-selected', 'true');
-                    } else {
-                        tab.setAttribute('aria-selected', 'false');
-                    }
-                }
-            });
-        }
+        renderRankingTable,
+        updateSearchTerm
     };
 })();
 
+
+/**
+ * =========================================================================
+ * MÓDULO DE INTERFAZ DE USUARIO (UI)
+ * Maneja el routing (pestañas), la visibilidad de elementos y eventos.
+ * =========================================================================
+ */
+
+// Muestra la pestaña seleccionada en el cuerpo principal
 function showTab(tabId) {
     const sections = document.querySelectorAll('.main-content-section');
     sections.forEach(section => {
         section.classList.remove('active');
-        section.style.display = 'none'; 
     });
 
     const targetSection = document.getElementById(tabId);
     if (targetSection) {
         targetSection.classList.add('active');
-        targetSection.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+        
+        // Oculta el formulario de login del header al cambiar de pestaña
+        if (tabId !== 'register') {
+            toggleLoginForm(false); 
+        }
 
-    if (typeof toggleLoginForm === 'function') {
-        toggleLoginForm(false); 
-    }
-
-    if (typeof AppState !== 'undefined' && AppState.getState) {
+        // Actualiza el estado de la aplicación
         AppState.setState({ 
             ui: { 
                 ...AppState.getState().ui, 
                 currentTab: tabId 
             } 
         });
+
+        // Lógica específica al mostrar una pestaña
+        if (tabId === 'profile') updateProfileInfo();
+        if (tabId === 'ranking-divisions') {
+             // Asegura que se renderice el ranking al entrar a la pestaña
+             const { currentRankingGame, currentRankingDivision } = AppState.getState().ui;
+             showGameRanking(currentRankingGame, currentRankingDivision);
+        }
+        if (tabId === 'admin-panel') {
+            fillUserSelect('admin-ranking-user');
+            fillUserSelect('admin-user-select');
+            fillUserSelect('member-user-select');
+            renderRequests();
+            // Asegura que la primera pestaña de Admin esté activa
+            showAdminTab('ranking-management'); 
+        }
+        if (tabId === 'requests') updateRequestButtons();
     }
 }
+
+// Muestra/Oculta la interfaz de login en el header
 function toggleLoginForm(show) {
     const loginFormWrapper = document.getElementById('header-login-form-wrapper');
     const authUnloggedActions = document.getElementById('auth-unlogged-actions');
     
     if (loginFormWrapper && authUnloggedActions) {
         if (show) {
+            // Muestra el formulario en el header
             loginFormWrapper.style.display = 'flex'; 
             authUnloggedActions.style.display = 'none'; // Oculta los botones
         } else {
             loginFormWrapper.style.display = 'none'; // Oculta el formulario
-            if (!AppState.getState().currentUser) {
-                authUnloggedActions.style.display = 'flex';
-            }
+            updateLoginUI(AppState.getState()); // Revisa qué mostrar (logged/unlogged)
         }
     }
 }
 
+// Actualiza la interfaz del header (Login/Registro vs. Perfil/Admin/Config)
+function updateLoginUI(state) {
+    const isLogged = state.currentUser !== null;
+    const isAdmin = isLogged && state.currentUser.isAdmin;
+
+    // Elementos a gestionar
+    const unlogged = document.getElementById('auth-unlogged-actions');
+    const logged = document.getElementById('profile-actions');
+    const adminButton = document.getElementById('admin-button');
+    const userNameEl = document.getElementById('user-display-name');
+    
+    // Ocultar prompts de login en otras secciones si está logueado
+    const clubLogin = document.getElementById('club-login-prompt');
+    const leagueLogin = document.getElementById('league-login-prompt');
+    const clubRequest = document.getElementById('club-request-prompt');
+    const leagueRequest = document.getElementById('league-request-prompt');
+
+    if (unlogged) unlogged.style.display = isLogged ? 'none' : 'flex';
+    if (logged) logged.style.display = isLogged ? 'flex' : 'none';
+    
+    if (isLogged) {
+        if (userNameEl) userNameEl.textContent = state.currentUser.username;
+        if (adminButton) adminButton.style.display = isAdmin ? 'block' : 'none';
+        
+        // Mostrar botones de solicitud en Info del Club/Liga
+        if (clubLogin) clubLogin.style.display = 'none';
+        if (leagueLogin) leagueLogin.style.display = 'none';
+        if (clubRequest) clubRequest.style.display = 'block';
+        if (leagueRequest) leagueRequest.style.display = 'block';
+    } else {
+        // Mostrar prompts de login en Info del Club/Liga
+        if (clubLogin) clubLogin.style.display = 'block';
+        if (leagueLogin) leagueLogin.style.display = 'block';
+        if (clubRequest) clubRequest.style.display = 'none';
+        if (leagueRequest) leagueRequest.style.display = 'none';
+    }
+}
+
+// Renderiza el contenido del ranking al cambiar de juego
 function showGameRanking(game) {
-    if (game === 'tekken') {
-        document.getElementById('tekken-ranking').style.display = 'block';
-        document.getElementById('smash-ranking').style.display = 'none';
-    } else {
-        document.getElementById('tekken-ranking').style.display = 'none';
-        document.getElementById('smash-ranking').style.display = 'block';
-    }
+    const state = AppState.getState();
+    const otherGame = game === 'tekken' ? 'smash' : 'tekken';
     
-    showDivision(game, 'diamante');
+    // 1. Mostrar/Ocultar contenedores de juego
+    const gameContainer = document.getElementById(`${game}-ranking`);
+    const otherContainer = document.getElementById(`${otherGame}-ranking`);
+    const gameTab = document.getElementById(`tab-${game}`);
+    const otherTab = document.getElementById(`tab-${otherGame}`);
+
+    if (gameContainer) gameContainer.style.display = 'block';
+    if (otherContainer) otherContainer.style.display = 'none';
+    if (gameTab) gameTab.classList.add('active');
+    if (otherTab) otherTab.classList.remove('active');
+
+    // 2. Usar la última división activa para el juego, o 'diamante' por defecto
+    const currentDivision = state.ui.currentRankingDivision;
+
+    // 3. Renderizar y actualizar el estado
+    AppState.setState({ 
+        ui: { 
+            ...state.ui, 
+            currentRankingGame: game 
+        } 
+    });
+    showDivision(game, currentDivision);
 }
 
+// Renderiza el contenido del ranking al cambiar de división
 function showDivision(game, division) {
-    const gameElement = document.getElementById(`${game}-ranking`);
-    const divisionContents = gameElement.querySelectorAll('.division-content');
-    divisionContents.forEach(content => {
-        content.classList.remove('active');
-    });
-    
-    document.getElementById(`${game}-${division}`).classList.add('active');
-    
-    const divisionTabs = gameElement.querySelectorAll('.division-tab');
-    divisionTabs.forEach(tab => {
-        tab.classList.remove('active');
-        tab.setAttribute('aria-selected', 'false');
-    });
-    
-    const activeTab = gameElement.querySelector(`.division-tab:nth-child(${getDivisionIndex(division)})`);
-    activeTab.classList.add('active');
-    activeTab.setAttribute('aria-selected', 'true');
-    
-    RankingsModule.renderRankings();
-}
-
-function getDivisionIndex(division) {
-    switch(division) {
-        case 'diamante': return 1;
-        case 'oro': return 2;
-        case 'plata': return 3;
-        case 'bronce': return 4;
-        default: return 1;
-    }
-}
-
-function updateLoginUI() {
     const state = AppState.getState();
-    const currentUser = state.currentUser;
-    const isLoggedIn = !!currentUser; 
 
-    const unloggedActions = document.getElementById('auth-unlogged-actions');
-    const loggedActions = document.getElementById('auth-logged-actions');
-    const adminButton = document.getElementById('admin-panel-btn');
-
-    if (unloggedActions && loggedActions) {
-        unloggedActions.classList.toggle('hidden', isLoggedIn);
-        
-        loggedActions.classList.toggle('hidden', !isLoggedIn);
-
-        if (adminButton) {
-            const isAdmin = isLoggedIn && currentUser.role === 'admin';
-            adminButton.classList.toggle('hidden', !isAdmin); 
-        }
-
-        const currentTab = document.querySelector('.tab-content:not(.hidden)');
-        if (isLoggedIn && currentTab && currentTab.id === 'welcome') {
-            showTab('profile');
-        }
+    // 1. Marcar el botón de la división como activo
+    const divisionTabsContainer = document.getElementById(`${game}-division-tabs`);
+    if (divisionTabsContainer) {
+        divisionTabsContainer.querySelectorAll('.btn-tab').forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(division)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
     }
+
+    // 2. Renderizar la tabla de la división y juego seleccionados
+    RankingsModule.renderRankingTable(game, division);
+    
+    // 3. Actualizar el estado (esto dispara el re-renderizado para otros listeners si es necesario)
+    AppState.setState({ 
+        ui: { 
+            ...state.ui, 
+            currentRankingGame: game, 
+            currentRankingDivision: division
+        } 
+    });
 }
 
-function hashPassword(password) {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-        const char = password.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return hash.toString();
-}
-
-function login() {
-    const usernameOrEmailInput = document.getElementById('header-login-username');
-    const passwordInput = document.getElementById('header-login-password');
-    
-    if (!usernameOrEmailInput || !passwordInput) {
-        showAlert('Error: Faltan campos de login en el header.', 'error');
-        return;
-    }
-
-    const identifier = usernameOrEmailInput.value.trim();
-    const password = passwordInput.value;
-    
-    if (!identifier || !password) {
-        showAlert('Por favor, ingresa tu usuario/email y contraseña.', 'warning');
-        return;
-    }
-    
-    const hashedInputPassword = hashPassword(password);
-    
-    const state = AppState.getState();
-    
-    const user = state.users.find(u => {
-        const usernameMatch = u.username.toLowerCase() === identifier.toLowerCase();
-        const emailMatch = u.email && u.email.toLowerCase() === identifier.toLowerCase();
-        return usernameMatch || emailMatch;
+// Muestra la pestaña dentro del Panel de Administración
+function showAdminTab(tabId) {
+    document.querySelectorAll('.admin-tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    document.querySelectorAll('.admin-tabs .btn-tab').forEach(btn => {
+        btn.classList.remove('active');
     });
 
-    if (user && user.password === hashedInputPassword) { // <--- COMPARACIÓN DE HASHES
-        AppState.setState({ currentUser: user });
-        showAlert(`¡Bienvenido de vuelta, ${user.username}!`, 'success');
-        
-        usernameOrEmailInput.value = '';
-        passwordInput.value = '';
+    const target = document.getElementById(tabId);
+    const targetButton = document.querySelector(`.admin-tabs .btn-tab[onclick*="${tabId}"]`);
+    
+    if (target) target.style.display = 'block';
+    if (targetButton) targetButton.classList.add('active');
 
-        updateLoginUI(); 
-        toggleLoginForm(false); // Ocultar el formulario
-        
-        if (user.username === 'admin') {
-            showTab('admin-panel');
-        } else {
-            showTab('welcome');
-        }
+    if (tabId === 'request-review') renderRequests();
+}
 
+
+/**
+ * =========================================================================
+ * FUNCIONES DE PERFIL Y SOLICITUDES
+ * =========================================================================
+ */
+
+// Rellena la información de la página de perfil
+function updateProfileInfo() {
+    const user = AppState.getState().currentUser;
+    if (!user) return;
+
+    // Rellenar elementos
+    document.getElementById('profile-name').textContent = user.fullname;
+    document.getElementById('profile-nick').textContent = `@${user.username}`;
+    document.getElementById('profile-email').textContent = user.email;
+    document.getElementById('profile-phone').textContent = user.phone;
+    document.getElementById('profile-age').textContent = user.age;
+    document.getElementById('profile-gender').textContent = user.gender.charAt(0).toUpperCase() + user.gender.slice(1);
+    document.getElementById('profile-is-member').textContent = user.isMember ? 'Sí' : 'No';
+    document.getElementById('profile-role').textContent = user.isAdmin ? 'Administrador' : 'Usuario Normal';
+}
+
+// Actualiza el estado de los botones de solicitud
+function updateRequestButtons() {
+    const state = AppState.getState();
+    const user = state.currentUser;
+    if (!user) return;
+    
+    const clubBtn = document.getElementById('submit-club-request-btn');
+    const clubStatus = document.getElementById('club-request-status');
+    const leagueBtn = document.getElementById('submit-league-request-btn');
+    const leagueStatus = document.getElementById('league-request-status');
+
+    // Estado del Club
+    if (clubStatus) clubStatus.className = 'request-status';
+    if (user.clubRequestStatus === 'approved') {
+        if (clubBtn) clubBtn.style.display = 'none';
+        if (clubStatus) { clubStatus.textContent = '¡Membresía APROBADA!'; clubStatus.classList.add('success'); }
+    } else if (user.clubRequestStatus === 'pending') {
+        if (clubBtn) clubBtn.style.display = 'none';
+        if (clubStatus) { clubStatus.textContent = 'Solicitud PENDIENTE de revisión.'; clubStatus.classList.add('pending'); }
     } else {
-        showAlert('Error de inicio de sesión: Usuario o contraseña incorrectos.', 'error');
+        if (clubBtn) clubBtn.style.display = 'block';
+        if (clubStatus) clubStatus.textContent = '';
+    }
+
+    // Estado de Liga
+    if (leagueStatus) leagueStatus.className = 'request-status';
+    if (user.leagueRequestStatus === 'approved') {
+        if (leagueBtn) leagueBtn.style.display = 'none';
+        if (leagueStatus) { leagueStatus.textContent = '¡Ingreso a Liga APROBADO!'; leagueStatus.classList.add('success'); }
+    } else if (user.leagueRequestStatus === 'pending') {
+        if (leagueBtn) leagueBtn.style.display = 'none';
+        if (leagueStatus) { leagueStatus.textContent = 'Solicitud PENDIENTE de revisión.'; leagueStatus.classList.add('pending'); }
+    } else {
+        if (leagueBtn) leagueBtn.style.display = 'block';
+        if (leagueStatus) leagueStatus.textContent = '';
     }
 }
 
-function logout() {
-    AppState.setState({ currentUser: null }); 
+// Envía solicitud de Membresía del Club
+function submitClubRequest() {
+    const state = AppState.getState();
+    const user = state.currentUser;
+    if (!user) return showAlert('Debes iniciar sesión para solicitar membresía.', 'error');
+    if (user.clubRequestStatus !== 'none') return showAlert('Tu solicitud ya está pendiente o ha sido procesada.', 'warning');
 
-    showTab('welcome'); 
+    const newRequest = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        username: user.username,
+        type: 'club',
+        date: new Date().toLocaleDateString('es-ES'),
+        status: 'pending'
+    };
     
-    updateLoginUI(); 
+    const updatedUser = { ...user, clubRequestStatus: 'pending' };
     
-    showAlert('Sesión cerrada con éxito. ¡Vuelve pronto!', 'success');
+    AppState.setState({
+        clubRequests: [...state.clubRequests, newRequest],
+        users: state.users.map(u => u.id === user.id ? updatedUser : u),
+        currentUser: updatedUser
+    });
+
+    showAlert('Solicitud de membresía enviada con éxito.', 'success');
+    updateRequestButtons();
+}
+
+// Envía solicitud de Ingreso a Liga
+function submitLeagueRequest() {
+    const state = AppState.getState();
+    const user = state.currentUser;
+    if (!user) return showAlert('Debes iniciar sesión para solicitar ingreso a liga.', 'error');
+    if (user.leagueRequestStatus !== 'none') return showAlert('Tu solicitud ya está pendiente o ha sido procesada.', 'warning');
+
+    const gameSelect = document.getElementById('league-game-select');
+    const selectedGame = gameSelect ? gameSelect.value : null;
+
+    if (!selectedGame) return showAlert('Por favor, selecciona un juego.', 'error');
+
+    const newRequest = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        username: user.username,
+        type: 'league',
+        game: selectedGame,
+        date: new Date().toLocaleDateString('es-ES'),
+        status: 'pending'
+    };
+    
+    const updatedUser = { ...user, leagueRequestStatus: 'pending' };
+
+    AppState.setState({
+        leagueRequests: [...state.leagueRequests, newRequest],
+        users: state.users.map(u => u.id === user.id ? updatedUser : u),
+        currentUser: updatedUser
+    });
+
+    showAlert(`Solicitud de ingreso a liga (${selectedGame}) enviada con éxito.`, 'success');
+    updateRequestButtons();
+}
+
+
+/**
+ * =========================================================================
+ * FUNCIONES DE ADMINISTRACIÓN
+ * =========================================================================
+ */
+
+// Rellena los selectores de usuarios en el panel de admin
+function fillUserSelect(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const users = AppState.getState().users.filter(u => u.id !== AppState.getState().currentUser.id); // Excluir al admin actual
+    
+    let optionsHTML = '<option value="" disabled selected>Selecciona un usuario</option>';
+    users.forEach(user => {
+        optionsHTML += `<option value="${user.id}">${user.username} (${user.fullname})</option>`;
+    });
+
+    select.innerHTML = optionsHTML;
+}
+
+// Renderiza las solicitudes pendientes para revisión
+function renderRequests() {
+    const state = AppState.getState();
+    const container = document.getElementById('pending-requests-container');
+    if (!container) return;
+
+    const allRequests = [
+        ...state.clubRequests.map(r => ({ ...r, displayType: 'Membresía Club' })),
+        ...state.leagueRequests.map(r => ({ ...r, displayType: `Ingreso Liga (${r.game})` }))
+    ];
+
+    if (allRequests.length === 0) {
+        container.innerHTML = '<p style="color: var(--primary-light);">No hay solicitudes pendientes.</p>';
+        return;
+    }
+
+    let html = '';
+    allRequests.forEach(req => {
+        html += `
+            <div class="admin-request-item">
+                <div class="request-info">
+                    <strong>${req.displayType}</strong>
+                    <p>Usuario: @${req.username}</p>
+                    <p>Fecha: ${req.date}</p>
+                </div>
+                <div class="request-actions">
+                    <button class="btn btn-success" onclick="handleRequest('${req.id}', '${req.type}', true)">Aprobar</button>
+                    <button class="btn btn-error" onclick="handleRequest('${req.id}', '${req.type}', false)">Rechazar</button>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Maneja la aprobación/rechazo de una solicitud
+function handleRequest(requestId, type, approve) {
+    const state = AppState.getState();
+
+    let requestsKey = type === 'club' ? 'clubRequests' : 'leagueRequests';
+    
+    const request = state[requestsKey].find(r => r.id === requestId);
+    if (!request) return showAlert('Solicitud no encontrada.', 'error');
+    
+    const updatedUsers = state.users.map(user => {
+        if (user.id === request.userId) {
+            // Actualizar el estado de solicitud y la propiedad de membresía/liga
+            const updatedUser = { ...user };
+            
+            if (type === 'club') {
+                updatedUser.clubRequestStatus = approve ? 'approved' : 'rejected';
+                updatedUser.isMember = approve;
+            } else if (type === 'league') {
+                updatedUser.leagueRequestStatus = approve ? 'approved' : 'rejected';
+                // No se agrega una propiedad 'isLeaguePlayer' para simplificar, 
+                // ya que su estado está implícito en leagueRequestStatus.
+            }
+            
+            // Si el usuario logueado es el afectado, actualizar el currentUser
+            if (state.currentUser && state.currentUser.id === user.id) {
+                AppState.setState({ currentUser: updatedUser });
+            }
+            
+            return updatedUser;
+        }
+        return user;
+    });
+
+    // Remover la solicitud de la lista (ya fue procesada)
+    const updatedRequests = state[requestsKey].filter(r => r.id !== requestId);
+    
+    const newState = {
+        users: updatedUsers,
+        [requestsKey]: updatedRequests
+    };
+    
+    AppState.setState(newState);
+    showAlert(`Solicitud de @${request.username} ${approve ? 'APROBADA' : 'RECHAZADA'} con éxito.`, 'success');
+    renderRequests();
+}
+
+// Concede o revoca el estado de Administrador
+function toggleAdminStatus() {
+    const select = document.getElementById('admin-user-select');
+    const actionSelect = document.getElementById('admin-status-action');
+    const userId = select.value;
+    const action = actionSelect.value;
+    
+    if (!userId) return showAlert('Selecciona un usuario.', 'error');
+    
+    const isAdmin = action === 'grant';
+    
+    const state = AppState.getState();
+    const updatedUsers = state.users.map(u => {
+        if (u.id === userId) {
+            return { ...u, isAdmin: isAdmin };
+        }
+        return u;
+    });
+    
+    AppState.setState({ users: updatedUsers });
+    showAlert(`Permiso de Admin ${isAdmin ? 'CONCEDIDO' : 'REVOCADO'}.`, 'success');
+}
+
+// Concede Membresía de Club
+function grantClubMembership() {
+    const select = document.getElementById('member-user-select');
+    const userId = select.value;
+
+    if (!userId) return showAlert('Selecciona un usuario.', 'error');
+
+    const state = AppState.getState();
+    const userToUpdate = state.users.find(u => u.id === userId);
+
+    if (userToUpdate.isMember) return showAlert('El usuario ya es miembro.', 'warning');
+
+    const updatedUsers = state.users.map(u => {
+        if (u.id === userId) {
+            return { ...u, isMember: true, clubRequestStatus: 'approved' };
+        }
+        return u;
+    });
+    
+    AppState.setState({ users: updatedUsers });
+    showAlert(`Membresía de Club concedida a @${userToUpdate.username}.`, 'success');
+}
+
+
+// Actualiza la puntuación y división de un jugador
+function updateRankingFromAdminPanel() {
+    const userId = document.getElementById('admin-ranking-user').value;
+    const game = document.getElementById('admin-ranking-game').value;
+    const division = document.getElementById('admin-ranking-division').value;
+    const score = parseInt(document.getElementById('admin-ranking-score').value);
+    
+    if (!userId) return showAlert('Selecciona un usuario.', 'error');
+    if (isNaN(score) || score < 0) return showAlert('La puntuación debe ser un número válido.', 'error');
+    
+    const state = AppState.getState();
+    const user = state.users.find(u => u.id === userId);
+    if (!user) return showAlert('Usuario no encontrado.', 'error');
+
+    // 1. Eliminar al jugador de cualquier otra división en ese juego
+    let newRankings = { ...state.rankings };
+
+    ['diamante', 'oro', 'plata', 'bronce'].forEach(div => {
+        newRankings[game][div] = newRankings[game][div].filter(p => p.userId !== userId);
+    });
+
+    // 2. Agregar al jugador a la nueva división
+    const newPlayerEntry = { userId: user.id, username: user.username, score: score };
+    newRankings[game][division].push(newPlayerEntry);
+    
+    AppState.setState({ rankings: newRankings });
+    showAlert(`Ranking de @${user.username} actualizado a ${division.toUpperCase()} con ${score} puntos.`, 'success');
+    
+    // Forzar el renderizado del ranking si la pestaña está activa
+    const { currentRankingGame, currentRankingDivision } = state.ui;
+    if (state.ui.currentTab === 'ranking-divisions' && currentRankingGame === game) {
+        showDivision(currentRankingGame, currentRankingDivision);
+    }
+}
+
+// Resetea todos los datos (excepto el admin inicial) y carga ejemplos
+function resetData() {
+    const state = AppState.getState();
+    const adminUser = state.users.find(u => u.isAdmin);
+    
+    const newState = {
+        currentUser: adminUser, // Mantener al admin logueado
+        users: [adminUser], // Solo el admin
+        rankings: { 
+            tekken: { diamante: [], oro: [], plata: [], bronce: [] },
+            smash: { diamante: [], oro: [], plata: [], bronce: [] }
+        },
+        clubRequests: [],
+        leagueRequests: [],
+        ui: state.ui
+    };
+    
+    AppState.setState(newState);
+    loadSampleRankings(); // Volver a cargar los ejemplos
+    showAlert('Todos los datos han sido restablecidos y cargados con ejemplos.', 'warning');
+    showTab('welcome'); // Regresar a la pantalla de bienvenida
+}
+
+
+/**
+ * =========================================================================
+ * DATOS DE EJEMPLO Y UTILIDADES PEQUEÑAS
+ * =========================================================================
+ */
+
+// Carga rankings de ejemplo
+function loadSampleRankings() {
+    const users = AppState.getState().users;
+    const userAdmin = users.find(u => u.isAdmin);
+    
+    const sampleRankings = {
+        tekken: {
+            diamante: [
+                { userId: userAdmin.id, username: userAdmin.username, score: 3200 }
+            ],
+            oro: [
+                { userId: crypto.randomUUID(), username: 'BladeRunner', score: 1850 },
+                { userId: crypto.randomUUID(), username: 'ShadowKing', score: 1590 }
+            ],
+            plata: [
+                { userId: crypto.randomUUID(), username: 'NeoFighter', score: 1120 },
+                { userId: crypto.randomUUID(), username: 'MatrixUser', score: 980 }
+            ],
+            bronce: [
+                { userId: crypto.randomUUID(), username: 'Trainee01', score: 550 }
+            ]
+        },
+        smash: {
+            diamante: [
+                { userId: crypto.randomUUID(), username: 'SmashPro', score: 3500 }
+            ],
+            oro: [
+                { userId: crypto.randomUUID(), username: 'FalconPunch', score: 1700 }
+            ],
+            plata: [
+                { userId: crypto.randomUUID(), username: 'JigglyPuff', score: 1050 }
+            ],
+            bronce: [
+                { userId: crypto.randomUUID(), username: 'Newcomer', score: 400 }
+            ]
+        }
+    };
+    
+    AppState.setState({ rankings: sampleRankings });
+}
+
+// Alterna la visibilidad del campo de contraseña
+function togglePasswordVisibility(id, iconElement) {
+    const input = document.getElementById(id);
+    const icon = iconElement.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    }
+}
+
+
+/**
+ * =========================================================================
+ * FUNCIONES DE INICIO DE SESIÓN Y REGISTRO
+ * Implementación de Login/Registro, usando AuthModule.
+ * =========================================================================
+ */
+function login() {
+    const identifier = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!identifier || !password) {
+        return showAlert('Por favor, ingresa tu usuario/correo y contraseña.', 'error');
+    }
+
+    try {
+        AuthModule.login(identifier, password);
+        showAlert(`Bienvenido, ${AppState.getState().currentUser.username}.`, 'success');
+        // Limpiar formulario y ocultar
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+        toggleLoginForm(false); 
+        showTab('welcome');
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
 }
 
 function registerUser() {
-    const fullnameInput = document.getElementById('reg-fullname');
-    const phoneInput = document.getElementById('reg-phone');
-    const usernameInput = document.getElementById('reg-username');
-    const emailInput = document.getElementById('reg-email');
-    const passwordInput = document.getElementById('reg-password');
-    const ageInput = document.getElementById('reg-age');
-    const genderInput = document.getElementById('reg-gender');
+    const fullname = document.getElementById('reg-fullname').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const username = document.getElementById('reg-username').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const confirmPassword = document.getElementById('reg-confirm-password').value;
+    const age = parseInt(document.getElementById('reg-age').value);
+    const gender = document.getElementById('reg-gender').value;
 
-    const fullname = fullnameInput ? fullnameInput.value.trim() : '';
-    const phone = phoneInput ? phoneInput.value.trim() : '';
-    const username = usernameInput ? usernameInput.value.trim() : '';
-    const email = emailInput ? emailInput.value.trim() : '';
-    const password = passwordInput ? passwordInput.value : '';
-    const age = parseInt(ageInput ? ageInput.value : 0);
-    const gender = genderInput ? genderInput.value : '';
-
+    // Función auxiliar para mostrar errores
     const setErrorMessage = (id, message) => {
         const element = document.getElementById(id + '-error');
         if (element) {
@@ -782,47 +978,19 @@ function registerUser() {
         }
     };
     
-    ['reg-fullname', 'reg-phone', 'reg-username', 'reg-email', 'reg-password', 'reg-age', 'reg-gender'].forEach(id => setErrorMessage(id, ''));
+    // Resetear mensajes de error
+    ['reg-fullname', 'reg-phone', 'reg-username', 'reg-email', 'reg-password', 'reg-confirm-password', 'reg-age', 'reg-gender'].forEach(id => setErrorMessage(id, ''));
 
     let isValid = true;
-
-    if (!fullname) {
-        setErrorMessage('reg-fullname', 'El nombre y apellido son obligatorios.');
-        isValid = false;
-    }
     
-    if (!phone) {
-        setErrorMessage('reg-phone', 'El teléfono es obligatorio.');
-        isValid = false;
-    } else if (!/^\+?[0-9\s-]{7,}$/.test(phone)) { 
-        setErrorMessage('reg-phone', 'El formato del teléfono no es válido.');
-        isValid = false;
-    }
-    
-    if (!username) {
-        setErrorMessage('reg-username', 'El nombre de usuario es obligatorio.');
-        isValid = false;
-    }
-    
-    if (!email || !AuthModule.validateEmail(email)) {
-        setErrorMessage('reg-email', 'Ingresa un correo electrónico válido.');
-        isValid = false;
-    }
-    
-    if (password.length < 6) {
-        setErrorMessage('reg-password', 'La contraseña debe tener al menos 6 caracteres.');
-        isValid = false;
-    }
-    
-    if (isNaN(age) || age < 13 || age > 120) {
-        setErrorMessage('reg-age', 'Debes ingresar una edad válida (mínimo 13 años).');
-        isValid = false;
-    }
-    
-    if (!gender) {
-        setErrorMessage('reg-gender', 'Debes seleccionar un sexo.');
-        isValid = false;
-    }
+    if (!fullname) { setErrorMessage('reg-fullname', 'El nombre y apellido son obligatorios.'); isValid = false; }
+    if (!phone || !/^\+?[0-9\s-]{7,}$/.test(phone)) { setErrorMessage('reg-phone', 'El formato del teléfono no es válido.'); isValid = false; }
+    if (!username) { setErrorMessage('reg-username', 'El nombre de usuario es obligatorio.'); isValid = false; }
+    if (!email || !AuthModule.validateEmail(email)) { setErrorMessage('reg-email', 'Ingresa un correo electrónico válido.'); isValid = false; }
+    if (password.length < 6) { setErrorMessage('reg-password', 'La contraseña debe tener al menos 6 caracteres.'); isValid = false; }
+    if (password !== confirmPassword) { setErrorMessage('reg-confirm-password', 'Las contraseñas no coinciden.'); isValid = false; }
+    if (isNaN(age) || age < 13 || age > 120) { setErrorMessage('reg-age', 'Debes ingresar una edad válida (mínimo 13 años).'); isValid = false; }
+    if (!gender) { setErrorMessage('reg-gender', 'Debes seleccionar un sexo.'); isValid = false; }
 
     if (!isValid) {
         showAlert('Por favor, corrige los errores en el formulario.', 'error');
@@ -830,15 +998,7 @@ function registerUser() {
     }
 
     try {
-        AuthModule.register({ 
-            fullname, 
-            phone,    
-            username, 
-            email, 
-            password, 
-            age, 
-            gender 
-        });
+        AuthModule.register({ fullname, phone, username, email, password, age, gender });
         showAlert('Registro exitoso. Ahora puedes iniciar sesión.', 'success');
         showTab('welcome');
         document.getElementById('register-form').reset();
@@ -852,882 +1012,62 @@ function registerUser() {
         }
     }
 }
-function updateRankingFromAdminPanel() {
-    const userSelect = document.getElementById('admin-user-select'); 
-    const usernameInput = document.getElementById('admin-username-manual'); 
-    const gameSelect = document.getElementById('admin-game');
-    const divisionSelect = document.getElementById('admin-division');
-    const scoreInput = document.getElementById('admin-score');
-    
-    let username = '';
-    
-    if (userSelect && userSelect.value) {
-        // Obtener el nombre del usuario seleccionado (quitando el email)
-        username = userSelect.options[userSelect.selectedIndex].textContent.split('(')[0].trim();
-    } else {
-        username = usernameInput.value.trim();
-    }
-    
-    const game = gameSelect.value; 
-    const division = divisionSelect.value;
-    const score = parseInt(scoreInput.value, 10);
-    
-    if (!username || isNaN(score) || score < 0) {
-        showAlert('Debes seleccionar un usuario registrado O ingresar un nombre manualmente, y una puntuación válida.', 'error');
-        return;
-    }
-    
-    const state = AppState.getState();
-    let isAlreadyRanked = false;
-    let existingDivision = null;
-
-    for (const div in state.rankings[game]) {
-        if (state.rankings[game][div].some(player => player.username === username)) {
-            isAlreadyRanked = true;
-            existingDivision = div; 
-            break; 
-        }
-    }
-
-    if (isAlreadyRanked) {
-        RankingsModule.updateRanking(game, division, username, score, existingDivision); 
-        showAlert(`Jugador ${username} actualizado: Movido a ${division} de ${game} con ${score} puntos.`, 'success');
-    } else {
-        // Si no está rankeado, LO AÑADIMOS por primera vez.
-        RankingsModule.updateRanking(game, division, username, score);
-        showAlert(`Jugador ${username} añadido a ${division} de ${game} con ${score} puntos.`, 'success');
-    }
-
-    if (userSelect) userSelect.value = '';
-    usernameInput.value = '';
-    scoreInput.value = '';
-    RankingsModule.renderRankings();
-}
-    
-function updateUserProfile() {
-    const currentUser = AppState.getState().currentUser;
-    if (!currentUser) return;
-    
-    document.getElementById('profile-avatar-text').textContent = currentUser.username.charAt(0).toUpperCase();
-    document.getElementById('profile-username').textContent = currentUser.username;
-    document.getElementById('profile-display-username').textContent = currentUser.username;
-    document.getElementById('profile-email').textContent = currentUser.email;
-    document.getElementById('profile-age').textContent = currentUser.age;
-    document.getElementById('profile-gender').textContent = currentUser.gender;
-    
-    const adminBadge = document.getElementById('profile-admin-badge');
-    if (currentUser.isAdmin) {
-        adminBadge.style.display = 'inline-block';
-    } else {
-        adminBadge.style.display = 'none';
-    }
-    
-    const clubStatus = document.getElementById('profile-club-status');
-    if (currentUser.clubMembership) {
-        clubStatus.textContent = `Membresía: ${currentUser.clubMembership === 'vip' ? 'Club VIP' : 'Club Diamante'}`;
-    } else {
-        clubStatus.textContent = 'No tienes membresía de club activa';
-    }
-    
-    const leaguesContainer = document.getElementById('profile-leagues');
-    if (currentUser.leagues && currentUser.leagues.length > 0) {
-        leaguesContainer.innerHTML = '';
-        currentUser.leagues.forEach(league => {
-            const leagueBadge = document.createElement('span');
-            leagueBadge.className = 'league-badge';
-            leagueBadge.textContent = `${league.game} - ${league.division}`;
-            leaguesContainer.appendChild(leagueBadge);
-        });
-    } else {
-        leaguesContainer.innerHTML = '<p>No estás registrado en ninguna liga</p>';
-    }
-}
-
-function updateUserInfo() {
-    const currentUser = AppState.getState().currentUser;
-    if (!currentUser) return;
-    
-    if (!validateUserPanelForm()) {
-        return;
-    }
-    
-    const newUsername = document.getElementById('panel-username').value.trim();
-    const newEmail = document.getElementById('panel-email').value.trim();
-    const newPassword = document.getElementById('panel-password').value;
-    
-    if (newUsername !== currentUser.username) {
-        const state = AppState.getState();
-        if (state.users.find(u => u.username === newUsername)) {
-            showAlert('El nombre de usuario ya está en uso', 'error');
-            return;
-        }
-    }
-    
-    if (newEmail !== currentUser.email) {
-        const state = AppState.getState();
-        if (state.users.find(u => u.email === newEmail)) {
-            showAlert('El correo electrónico ya está en uso', 'error');
-            return;
-        }
-    }
-    
-    const updates = { username: newUsername, email: newEmail };
-    
-    if (newPassword) {
-        updates.password = AuthModule.hashPassword(newPassword);
-    }
-    
-    const success = AuthModule.updateUser(currentUser.id, updates);
-    
-    if (success) {
-        showAlert('Información actualizada correctamente', 'success');
-        updateLoginUI();
-        updateUserProfile();
-    } else {
-        showAlert('Error al actualizar la información', 'error');
-    }
-}
-
-function submitClubRequest() {
-    const currentUser = AppState.getState().currentUser;
-    if (!currentUser) {
-        showAlert('Debes iniciar sesión para solicitar una membresía de club', 'error');
-        return;
-    }
-    
-    const clubType = document.getElementById('club-type').value;
-    const message = document.getElementById('club-message').value;
-    
-    const request = {
-        id: AuthModule.generateId(),
-        username: currentUser.username,
-        userId: currentUser.id,
-        clubType,
-        message,
-        status: 'pending',
-        date: new Date().toLocaleDateString(),
-        createdAt: new Date().toISOString()
-    };
-    
-    const state = AppState.getState();
-    const clubRequests = [...state.clubRequests, request];
-    AppState.setState({ clubRequests });
-    
-    showAlert('Solicitud enviada. Será revisada por un administrador.', 'success');
-    showTab('user-panel');
-}
-
-function submitLeagueRequest() {
-    const currentUser = AppState.getState().currentUser;
-    if (!currentUser) {
-        showAlert('Debes iniciar sesión para solicitar unirte a una liga', 'error');
-        return;
-    }
-    
-    const leagueType = document.getElementById('league-type').value;
-    const message = document.getElementById('league-message').value;
-    
-    if (currentUser.leagues && currentUser.leagues.find(l => l.game === leagueType)) {
-        showAlert('Ya estás registrado en esta liga', 'error');
-        return;
-    }
-    
-    const request = {
-        id: AuthModule.generateId(),
-        username: currentUser.username,
-        userId: currentUser.id,
-        game: leagueType,
-        message,
-        status: 'pending',
-        date: new Date().toLocaleDateString(),
-        createdAt: new Date().toISOString()
-    };
-    
-    const state = AppState.getState();
-    const leagueRequests = [...state.leagueRequests, request];
-    AppState.setState({ leagueRequests });
-    
-    showAlert('Solicitud enviada. Será revisada por un administrador.', 'success');
-    showTab('user-panel');
-}
-
-function loadAdminPanel() {
-    const currentUser = AppState.getState().currentUser;
-    if (!currentUser || !currentUser.isAdmin) return;
-    
-    const adminUserSelect = document.getElementById('admin-user');
-    adminUserSelect.innerHTML = '';
-    
-    const state = AppState.getState();
-    const allUsers = state.users.filter(user => !user.isAdmin || user.id !== currentUser.id);
-    
-    if (allUsers.length === 0) {
-        const option = document.createElement('option');
-        option.textContent = 'No hay usuarios disponibles';
-        option.disabled = true;
-        adminUserSelect.appendChild(option);
-    } else {
-        allUsers.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = user.username + (user.isAdmin ? ' (Admin)' : '');
-            adminUserSelect.appendChild(option);
-        });
-    }
-    
-    updateAdminToggleButton();
-    loadClubRequests();
-    loadLeagueRequests();
-    
-    const adminPanel = document.getElementById('admin-panel');
-    const existingRankingSection = adminPanel.querySelector('.ranking-management-section');
-    
-    if (!existingRankingSection) {
-        const rankingSection = document.createElement('div');
-        rankingSection.className = 'admin-section ranking-management-section';
-        rankingSection.innerHTML = `
-            <h3>Gestión de Rankings</h3>
-            <div class="form-group">
-                <p>Los rankings están actualmente vacíos. Puedes cargar datos de ejemplo o usar el formulario de abajo para agregar jugadores manualmente.</p>
-                <button class="btn btn-success" onclick="loadSampleRankings()">Cargar Datos de Ejemplo</button>
-                <button class="btn btn-warning" onclick="clearAllRankings()">Limpiar Todos los Rankings</button>
-            </div>
-        `;
-        
-        const userManagementSection = adminPanel.querySelector('.admin-section');
-        userManagementSection.parentNode.insertBefore(rankingSection, userManagementSection.nextSibling);
-    }
-}
-
-function updateAdminToggleButton() {
-    const adminUserSelect = document.getElementById('admin-user');
-    const selectedUserId = adminUserSelect.value;
-    const state = AppState.getState();
-    const selectedUser = state.users.find(u => u.id === selectedUserId);
-    const toggleButton = document.getElementById('toggle-admin-btn');
-    
-    if (selectedUser) {
-        if (selectedUser.isAdmin) {
-            toggleButton.textContent = 'Revocar Permisos de Admin';
-            toggleButton.className = 'btn btn-error';
-        } else {
-            toggleButton.textContent = 'Conceder Permisos de Admin';
-            toggleButton.className = 'btn btn-warning';
-        }
-    }
-}
-
-async function toggleAdminStatus() {
-    const userId = document.getElementById('admin-user').value;
-    
-    if (!userId || userId === '') {
-        showAlert('Por favor selecciona un usuario', 'error');
-        return;
-    }
-    
-    const state = AppState.getState();
-    const user = state.users.find(u => u.id === userId);
-    
-    if (!user) return;
-    
-    const confirmed = await UIModule.confirmAction(
-        `¿Estás seguro de que quieres ${user.isAdmin ? 'revocar' : 'conceder'} permisos de administrador a ${user.username}?`
-    );
-    
-    if (confirmed) {
-        const success = AuthModule.updateUser(userId, { isAdmin: !user.isAdmin });
-        
-        if (success) {
-            showAlert(`Permisos de administrador ${user.isAdmin ? 'revocados' : 'concedidos'} para ${user.username}`, 'success');
-            
-            if (AppState.getState().currentUser && AppState.getState().currentUser.id === userId) {
-                updateLoginUI();
-                updateUserProfile();
-            }
-            
-            loadAdminPanel();
-        } else {
-            showAlert('Error al actualizar los permisos', 'error');
-        }
-    }
-}
-
-function updateUserScore() {
-    const userId = document.getElementById('admin-user').value;
-    const division = document.getElementById('admin-division').value;
-    const score = parseInt(document.getElementById('admin-score').value);
-    const game = document.getElementById('admin-game').value;
-    
-    if (!userId || userId === '') {
-        showAlert('Por favor selecciona un usuario', 'error');
-        return;
-    }
-    
-    if (isNaN(score) || score < 0) {
-        showAlert('Por favor ingresa una puntuación válida', 'error');
-        return;
-    }
-    
-    const state = AppState.getState();
-    const user = state.users.find(u => u.id === userId);
-    
-    if (!user) return;
-    
-    const username = user.username;
-    let userLeague = user.leagues ? user.leagues.find(l => l.game === game) : null;
-    
-    if (!userLeague) {
-        showAlert(`El usuario ${username} no está registrado en la liga de ${game}`, 'error');
-        return;
-    }
-    
-    userLeague.division = division;
-    
-    const success = AuthModule.updateUser(userId, { leagues: user.leagues });
-    
-    if (success) {
-        const rankingsResult = RankingsModule.updateRanking(game, division, username, score);
-        
-        if (rankingsResult.success) {
-            showAlert('Puntuación actualizada correctamente', 'success');
-            
-            if (AppState.getState().currentUser && AppState.getState().currentUser.id === userId) {
-                updateUserPanel();
-                updateUserProfile();
-            }
-        } else {
-            showAlert('Error al actualizar el ranking', 'error');
-        }
-    } else {
-        showAlert('Error al actualizar el usuario', 'error');
-    }
-}
-
-function loadClubRequests() {
-    const requestsList = document.getElementById('club-requests-list');
-    requestsList.innerHTML = '';
-    
-    const state = AppState.getState();
-    const pendingRequests = state.clubRequests.filter(request => request.status === 'pending');
-    
-    if (pendingRequests.length === 0) {
-        requestsList.innerHTML = '<p>No hay solicitudes de club pendientes</p>';
-        return;
-    }
-    
-    pendingRequests.forEach((request) => {
-        const requestDiv = document.createElement('div');
-        requestDiv.className = 'club-request';
-        requestDiv.style.border = '1px solid rgba(156, 39, 176, 0.3)';
-        requestDiv.style.padding = '15px';
-        requestDiv.style.marginBottom = '10px';
-        requestDiv.style.borderRadius = '5px';
-        requestDiv.style.background = 'rgba(26, 42, 56, 0.7)';
-        
-        requestDiv.innerHTML = `
-            <p><strong>Usuario:</strong> ${request.username}</p>
-            <p><strong>Tipo de Club:</strong> ${request.clubType === 'vip' ? 'Club VIP' : 'Club Diamante'}</p>
-            <p><strong>Fecha:</strong> ${request.date}</p>
-            ${request.message ? `<p><strong>Mensaje:</strong> ${request.message}</p>` : ''}
-            <button class="btn btn-success" onclick="approveClubRequest('${request.id}')">Aprobar</button>
-            <button class="btn btn-error" onclick="rejectClubRequest('${request.id}')">Rechazar</button>
-        `;
-        
-        requestsList.appendChild(requestDiv);
-    });
-}
-
-async function approveClubRequest(requestId) {
-    const confirmed = await UIModule.confirmAction('¿Estás seguro de que quieres aprobar esta solicitud de club?');
-    
-    if (!confirmed) return;
-    
-    const state = AppState.getState();
-    const requestIndex = state.clubRequests.findIndex(r => r.id === requestId);
-    
-    if (requestIndex === -1) return;
-    
-    const request = state.clubRequests[requestIndex];
-    request.status = 'approved';
-    
-    const userIndex = state.users.findIndex(u => u.id === request.userId);
-    if (userIndex !== -1) {
-        const success = AuthModule.updateUser(request.userId, { clubMembership: request.clubType });
-        
-        if (success) {
-            const clubRequests = [...state.clubRequests];
-            clubRequests[requestIndex] = request;
-            AppState.setState({ clubRequests });
-            
-            showAlert(`Solicitud de club de ${request.username} aprobada`, 'success');
-            loadClubRequests();
-        } else {
-            showAlert('Error al actualizar el usuario', 'error');
-        }
-    }
-}
-
-async function rejectClubRequest(requestId) {
-    const confirmed = await UIModule.confirmAction('¿Estás seguro de que quieres rechazar esta solicitud de club?');
-    
-    if (!confirmed) return;
-    
-    const state = AppState.getState();
-    const requestIndex = state.clubRequests.findIndex(r => r.id === requestId);
-    
-    if (requestIndex === -1) return;
-    
-    const request = state.clubRequests[requestIndex];
-    request.status = 'rejected';
-    
-    const clubRequests = [...state.clubRequests];
-    clubRequests[requestIndex] = request;
-    AppState.setState({ clubRequests });
-    
-    showAlert(`Solicitud de club de ${request.username} rechazada`, 'success');
-    loadClubRequests();
-}
-
-function loadLeagueRequests() {
-    const requestsList = document.getElementById('league-requests-list');
-    requestsList.innerHTML = '';
-    
-    const state = AppState.getState();
-    const pendingRequests = state.leagueRequests.filter(request => request.status === 'pending');
-    
-    if (pendingRequests.length === 0) {
-        requestsList.innerHTML = '<p>No hay solicitudes de liga pendientes</p>';
-        return;
-    }
-    
-    pendingRequests.forEach((request) => {
-        const requestDiv = document.createElement('div');
-        requestDiv.className = 'league-request';
-        requestDiv.style.border = '1px solid rgba(156, 39, 176, 0.3)';
-        requestDiv.style.padding = '15px';
-        requestDiv.style.marginBottom = '10px';
-        requestDiv.style.borderRadius = '5px';
-        requestDiv.style.background = 'rgba(26, 42, 56, 0.7)';
-        
-        const gameName = request.game === 'tekken' ? 'Tekken 8' : 'Super Smash Ultimate';
-        
-        requestDiv.innerHTML = `
-            <p><strong>Usuario:</strong> ${request.username}</p>
-            <p><strong>Liga:</strong> ${gameName}</p>
-            <p><strong>Fecha:</strong> ${request.date}</p>
-            ${request.message ? `<p><strong>Mensaje:</strong> ${request.message}</p>` : ''}
-            <button class="btn btn-success" onclick="approveLeagueRequest('${request.id}')">Aprobar</button>
-            <button class="btn btn-error" onclick="rejectLeagueRequest('${request.id}')">Rechazar</button>
-        `;
-        
-        requestsList.appendChild(requestDiv);
-    });
-}
-
-async function approveLeagueRequest(requestId) {
-    const confirmed = await UIModule.confirmAction('¿Estás seguro de que quieres aprobar esta solicitud de liga?');
-    
-    if (!confirmed) return;
-    
-    const state = AppState.getState();
-    const requestIndex = state.leagueRequests.findIndex(r => r.id === requestId);
-    
-    if (requestIndex === -1) return;
-    
-    const request = state.leagueRequests[requestIndex];
-    request.status = 'approved';
-    
-    const userIndex = state.users.findIndex(u => u.id === request.userId);
-    if (userIndex !== -1) {
-        const user = state.users[userIndex];
-        
-        if (!user.leagues) {
-            user.leagues = [];
-        }
-        
-        user.leagues.push({
-            game: request.game,
-            division: 'bronce'
-        });
-        
-        const success = AuthModule.updateUser(request.userId, { leagues: user.leagues });
-        
-        if (success) {
-            const rankingsResult = RankingsModule.updateRanking(request.game, 'bronce', user.username, 0);
-            
-            if (rankingsResult.success) {
-                const leagueRequests = [...state.leagueRequests];
-                leagueRequests[requestIndex] = request;
-                AppState.setState({ leagueRequests });
-                
-                showAlert(`Solicitud de liga de ${request.username} aprobada`, 'success');
-                loadLeagueRequests();
-            } else {
-                showAlert('Error al actualizar el ranking', 'error');
-            }
-        } else {
-            showAlert('Error al actualizar el usuario', 'error');
-        }
-    }
-}
-
-async function rejectLeagueRequest(requestId) {
-    const confirmed = await UIModule.confirmAction('¿Estás seguro de que quieres rechazar esta solicitud de liga?');
-    
-    if (!confirmed) return;
-    
-    const state = AppState.getState();
-    const requestIndex = state.leagueRequests.findIndex(r => r.id === requestId);
-    
-    if (requestIndex === -1) return;
-    
-    const request = state.leagueRequests[requestIndex];
-    request.status = 'rejected';
-    
-    const leagueRequests = [...state.leagueRequests];
-    leagueRequests[requestIndex] = request;
-    AppState.setState({ leagueRequests });
-    
-    showAlert(`Solicitud de liga de ${request.username} rechazada`, 'success');
-    loadLeagueRequests();
-}
-
-async function loadSampleRankings() {
-    const confirmed = await UIModule.confirmAction(
-        '¿Estás seguro de que quieres cargar datos de ejemplo en los rankings? Esto reemplazará cualquier dato existente.'
-    );
-    
-    if (confirmed) {
-        const result = RankingsModule.loadSampleData();
-        if (result.success) {
-            showAlert(result.message, 'success');
-        } else {
-            showAlert('Error al cargar datos de ejemplo', 'error');
-        }
-    }
-}
-
-async function clearAllRankings() {
-    const confirmed = await UIModule.confirmAction(
-        '¿Estás seguro de que quieres limpiar todos los rankings? Esta acción no se puede deshacer.'
-    );
-    
-    if (confirmed) {
-        const result = RankingsModule.clearAllRankings();
-        if (result.success) {
-            showAlert(result.message, 'success');
-        } else {
-            showAlert('Error al limpiar los rankings', 'error');
-        }
-    }
-}
-
-function createDefaultAdmin() {
-    const state = AppState.getState();
-    const adminExists = state.users.some(u => u.username === 'admin');
-    
-    if (!adminExists) {
-        const defaultAdmin = {
-            id: 'admin-123',
-            username: 'admin',
-            password: hashPassword('admin'),
-            email: 'admin@tecnoarena.com',
-            isAdmin: true,
-            score: 0,
-            club: null,
-            league: null
-        };
-        AppState.setState({ users: [...state.users, defaultAdmin] });
-    }
-}
-
-async function resetAllData() {
-    const confirmed = await UIModule.confirmAction(
-        '¿Estás seguro de que quieres restablecer todos los datos? Esta acción no se puede deshacer.'
-    );
-    
-    if (confirmed) {
-        AppState.setState({
-            users: [],
-            rankings: { 
-                tekken: { diamante: [], oro: [], plata: [], bronce: [] },
-                smash: { diamante: [], oro: [], plata: [], bronce: [] }
-            },
-            clubRequests: [],
-            leagueRequests: [],
-            currentUser: null
-        });
-        
-        createDefaultAdmin();
-        updateLoginUI();
-        showAlert('Todos los datos han sido restablecidos', 'success');
-        showTab('welcome');
-    }
-}
-
-function showAlert(message, type = 'success') {
-    const alertContainer = document.getElementById('alert-container');
-    const alertId = 'alert-' + Date.now();
-    
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.id = alertId;
-    alert.textContent = message;
-    alert.style.display = 'block';
-    
-    alert.setAttribute('role', 'alert');
-    alert.setAttribute('aria-live', 'assertive');
-    
-    alertContainer.appendChild(alert);
-    
-    setTimeout(() => {
-        const alertToRemove = document.getElementById(alertId);
-        if (alertToRemove) {
-            alertToRemove.remove();
-        }
-    }, 5000);
-}
-
-function saveDataToStorage() {
-    const state = AppState.getState();
-    try {
-        localStorage.setItem('tecnoArenaUsers', JSON.stringify(state.users));
-        localStorage.setItem('tecnoArenaRankings', JSON.stringify(state.rankings));
-        localStorage.setItem('tecnoArenaClubRequests', JSON.stringify(state.clubRequests));
-        localStorage.setItem('tecnoArenaLeagueRequests', JSON.stringify(state.leagueRequests));
-        
-        if (state.currentUser) {
-            localStorage.setItem('tecnoArenaCurrentUser', JSON.stringify(state.currentUser));
-        }
-    } catch (error) {
-        console.error('Error al guardar datos:', error);
-        showAlert('Error al guardar los datos.', 'error');
-    }
-}
-
-function loadDataFromStorage() {
-    try {
-        const storedUsers = localStorage.getItem('tecnoArenaUsers');
-        const storedRankings = localStorage.getItem('tecnoArenaRankings');
-        const storedClubRequests = localStorage.getItem('tecnoArenaClubRequests');
-        const storedLeagueRequests = localStorage.getItem('tecnoArenaLeagueRequests');
-        const storedCurrentUser = localStorage.getItem('tecnoArenaCurrentUser'); 
-        
-        const users = storedUsers ? JSON.parse(storedUsers) : [];
-        const rankings = storedRankings ? JSON.parse(storedRankings) : { 
-            tekken: { diamante: [], oro: [], plata: [], bronce: [] }, 
-            smash: { diamante: [], oro: [], plata: [], bronce: [] } 
-        };
-        const clubRequests = storedClubRequests ? JSON.parse(storedClubRequests) : [];
-        const leagueRequests = storedLeagueRequests ? JSON.parse(storedLeagueRequests) : [];
-        
-        const currentUser = null; 
-        
-        AppState.setState({ users, rankings, clubRequests, leagueRequests, currentUser }); 
-        
-        if (users.length === 0) {
-            createDefaultAdmin();
-        }
-    } catch (error) {
-        console.error('Error al cargar datos:', error);
-        showAlert('Error al cargar los datos. Se utilizarán datos por defecto.', 'error');
-        createDefaultAdmin();
-    }
-}
 
 
-
-, function() {
-    AppState.subscribe(state => {
-        if (state.ui.loading) {
-            UIModule.setLoadingState(true);
-        } else {
-            UIModule.setLoadingState(false);
-        }
-    });
-    
-    loadDataFromStorage(); 
-    
-    createDefaultAdmin();
-    
-    UIModule.initAccessibility();
-    
-    const searchInput = document.getElementById('ranking-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            RankingsModule.searchRankings(this.value);
-        });
-    }
-    
-    showTab('welcome');
-    updateLoginUI(); 
-});
-
-function renderRequests(requestType) {
-    const state = AppState.getState();
-    const requests = requestType === 'club' ? state.clubRequests : state.leagueRequests;
-    const containerId = requestType === 'club' ? 'club-requests-list' : 'league-requests-list';
-    const container = document.getElementById(containerId);
-
-    if (!container) return;
-
-    if (requests.length === 0) {
-        container.innerHTML = `<p class="empty-state">No hay solicitudes de ${requestType} pendientes.</p>`;
-        return;
-    }
-
-    let html = '<table><thead><tr><th>Usuario</th><th>Email</th><th>Fecha</th><th>Acción</th></tr></thead><tbody>';
-
-    requests.forEach((req, index) => {
-        html += `
-            <tr>
-                <td>${req.username}</td>
-                <td>${req.email}</td>
-                <td>${new Date(req.timestamp).toLocaleDateString()}</td>
-                <td>
-                    <button class="btn btn-success btn-small" onclick="handleRequest('${requestType}', ${index}, 'accept')">Aceptar</button>
-                    <button class="btn btn-error btn-small" onclick="handleRequest('${requestType}', ${index}, 'reject')">Rechazar</button>
-                </td>
-            </tr>
-        `;
-    });
-
-    html += '</tbody></table>';
-    container.innerHTML = html;
-}
-
-function handleRequest(requestType, index, action) {
-    const state = AppState.getState();
-    const requestsKey = requestType === 'club' ? 'clubRequests' : 'leagueRequests';
-    
-    const updatedRequests = [...state[requestsKey]];
-    const request = updatedRequests.splice(index, 1)[0]; 
-
-    if (action === 'accept') {
-        showAlert(`Solicitud de ${request.username} para ${requestType} aceptada.`, 'success');
-    } else {
-        showAlert(`Solicitud de ${request.username} para ${requestType} rechazada.`, 'error');
-    }
-
-    AppState.setState({ 
-        [requestsKey]: updatedRequests 
-    });
-    
-    // Re-renderizar las listas actualizadas
-    renderRequests('club');
-    renderRequests('league');
-}
-    
-function fillUserSelect() {
-    const userSelect = document.getElementById('admin-user-select');
-    if (!userSelect) return;
-
-    const state = AppState.getState();
-    const users = state.users.filter(u => u.username !== 'admin'); 
-
-    userSelect.innerHTML = '<option value="">-- Seleccionar un usuario registrado --</option>';
-
-    users.forEach(user => {
-        const option = document.createElement('option');
-        option.value = user.id || user.username; 
-        option.textContent = `${user.username} (${user.email})`;
-        userSelect.appendChild(option);
-    });
-}
-
-function togglePasswordVisibility(inputId, buttonElement) {
-    const input = document.getElementById(inputId);
-    if (!input) {
-        console.error('Input no encontrado para el ID:', inputId);
-        return;
-    }
-    
-    const isPassword = input.type === 'password';
-    input.type = isPassword ? 'text' : 'password';
-    
-    const svgIcon = buttonElement.querySelector('svg');
-
-    if (isPassword) {
-        // Mostrando (cambiar color a uno más visible)
-        buttonElement.setAttribute('aria-label', 'Ocultar contraseña');
-        if (svgIcon) svgIcon.style.color = 'var(--accent-color)'; 
-    } else {
-        // Ocultando (restaurar color)
-        buttonElement.setAttribute('aria-label', 'Mostrar contraseña');
-        if (svgIcon) svgIcon.style.color = ''; 
-    }
-}
-
+/**
+ * =========================================================================
+ * INICIALIZACIÓN Y SUSCRIPCIÓN GLOBAL
+ * =========================================================================
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    showTab('welcome'); 
-    
-    if (typeof updateLoginUI === 'function') {
-        updateLoginUI();      
-    }
-    if (typeof showDivision === 'function') {
-        showDivision('tekken', 'diamante');
-    }
+    // 1. Inicializa el estado de la aplicación (carga datos, crea admin si es necesario)
+    AppState.initialize();
+
+    // 2. Suscribirse a cambios de estado para actualizar la UI
+    AppState.subscribe(state => {
+        // Actualizar la UI de Login/Perfil/Admin en el header
+        updateLoginUI(state);
+        
+        // Renderizar el ranking si la pestaña está activa
+        if (state.ui.currentTab === 'ranking-divisions') {
+            RankingsModule.renderRankingTable(state.ui.currentRankingGame, state.ui.currentRankingDivision);
+        }
+        
+        // Actualizar la info de perfil si la pestaña está activa
+        if (state.ui.currentTab === 'profile') {
+            updateProfileInfo();
+        }
+
+        // Actualizar los botones de solicitud
+        if (state.ui.currentTab === 'requests') {
+            updateRequestButtons();
+        }
+    });
+
+    // 3. Mostrar la pestaña inicial
+    showTab(AppState.getState().ui.currentTab);
 });
 
-// PRIORITY 1: Funciones de Interfaz de Usuario para el Header y Enlaces
-window.showTab = showTab; 
-window.updateLoginUI = updateLoginUI; 
+// Exportar funciones globales necesarias para onclick en HTML
+window.showTab = showTab;
+window.toggleLoginForm = toggleLoginForm;
 window.login = login;
 window.registerUser = registerUser;
-window.logout = logout;
-window.toggleLoginForm = toggleLoginForm;
-
-// PRIORITY 2: Funciones y Módulos de Estado
-window.RankingsModule = RankingsModule;
-window.showGameRanking = showGameRanking;
-window.showDivision = showDivision;
-window.updateUserInfo = updateUserInfo;
+window.logout = AuthModule.logout;
+window.togglePasswordVisibility = togglePasswordVisibility;
 window.submitClubRequest = submitClubRequest;
 window.submitLeagueRequest = submitLeagueRequest;
+window.showGameRanking = showGameRanking;
+window.showDivision = showDivision;
+window.confirmAction = confirmAction;
 
-// PRIORITY 3: Funciones del Panel de Administración y Utilidades
-window.togglePasswordVisibility = togglePasswordVisibility;
+// Funciones Admin
+window.showAdminTab = showAdminTab;
 window.updateRankingFromAdminPanel = updateRankingFromAdminPanel;
-window.renderRequests = renderRequests;
-window.handleRequest = handleRequest;
-window.fillUserSelect = fillUserSelect; 
-
-// PRIORITY 4: Herramientas de Administración
 window.toggleAdminStatus = toggleAdminStatus;
-window.updateUserScore = updateUserScore;
-window.approveClubRequest = approveClubRequest;
-window.rejectClubRequest = rejectClubRequest;
-window.approveLeagueRequest = approveLeagueRequest;
-window.rejectLeagueRequest = rejectLeagueRequest;
-window.loadSampleRankings = loadSampleRankings;
-window.clearAllRankings = clearAllRankings;
-window.resetAllData = resetAllData;
+window.grantClubMembership = grantClubMembership;
+window.handleRequest = handleRequest;
+window.resetData = resetData; // Usado por confirmAction
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Exportar módulo de rankings para filtros de búsqueda
+window.RankingsModule = RankingsModule;
