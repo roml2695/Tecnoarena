@@ -71,7 +71,7 @@ const AppState = (function() {
                 phone: '0000000000',
                 username: 'admin',
                 email: adminEmail,
-                password: 'password123', // Usar hash en un entorno real
+                password: 'admin', // Usar hash en un entorno real
                 age: 30,
                 gender: 'not-say',
                 isAdmin: true,
@@ -1071,3 +1071,4 @@ window.resetData = resetData; // Usado por confirmAction
 
 // Exportar módulo de rankings para filtros de búsqueda
 window.RankingsModule = RankingsModule;
+
